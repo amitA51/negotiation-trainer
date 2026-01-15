@@ -1,0 +1,12 @@
+{
+  "hosting": {
+    "source": ".",
+    "frameworksBackend": {
+      "region": "europe-west1"
+    }
+  },
+  "firestore": {
+    "rules": "firebase/firestore.rules",
+    "indexes": "firebase/firestore.indexes.json"
+  }
+}
