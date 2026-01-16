@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowRight, Play } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button, Card, Spinner } from "@/components/ui";
+import { useToast } from "@/components/ui/Toast";
 import { MessageBubble, ChatInput, TypingIndicator } from "@/components/chat";
 import { getConsultation, getConsultationMessages, addConsultationMessage } from "@/lib/firebase/firestore";
 import type { Consultation, Message } from "@/types";
@@ -18,6 +19,7 @@ export default function ConsultationChatPage({ params }: Props) {
   const { consultationId } = use(params);
   const router = useRouter();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const [consultation, setConsultation] = useState<Consultation | null>(null);
@@ -146,6 +148,8 @@ export default function ConsultationChatPage({ params }: Props) {
       }
     } catch (error) {
       console.error("Error sending message:", error);
+      showToast("שגיאה בשליחת ההודעה. נסה שוב.", "error");
+      setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
     } finally {
       setSending(false);
     }

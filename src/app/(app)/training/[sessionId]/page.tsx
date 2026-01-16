@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Pause, StopCircle, Info, ChevronDown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button, Card, Badge, Spinner } from "@/components/ui";
+import { useToast } from "@/components/ui/Toast";
 import { MessageBubble, ChatInput, TypingIndicator } from "@/components/chat";
 import { getSession, getMessages, addMessage, updateSession } from "@/lib/firebase/firestore";
 import { getDifficultyInfo, cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ export default function TrainingSessionPage({ params }: Props) {
   const { sessionId } = use(params);
   const router = useRouter();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const [session, setSession] = useState<Session | null>(null);
@@ -154,6 +156,9 @@ export default function TrainingSessionPage({ params }: Props) {
       }
     } catch (error) {
       console.error("Error sending message:", error);
+      showToast("שגיאה בשליחת ההודעה. נסה שוב.", "error");
+      // Remove the optimistic message on error
+      setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
     } finally {
       setSending(false);
     }

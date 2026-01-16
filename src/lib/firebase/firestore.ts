@@ -336,7 +336,21 @@ export async function getUserStats(userId: string): Promise<UserStats | null> {
   const statsRef = doc(db, "userStats", userId);
   const statsSnap = await getDoc(statsRef);
 
-  if (!statsSnap.exists()) return null;
+  if (!statsSnap.exists()) {
+    // Create default stats if not exists
+    const defaultStats: UserStats = {
+      totalTrainingSessions: 0,
+      totalConsultations: 0,
+      avgScore: 0,
+      techniquesUsed: {},
+      scoresHistory: [],
+      strongTechniques: [],
+      weakTechniques: [],
+    };
+    
+    await setDoc(statsRef, defaultStats);
+    return defaultStats;
+  }
 
   const data = statsSnap.data();
   return {
@@ -362,7 +376,19 @@ export async function updateUserStats(
   const statsRef = doc(db, "userStats", userId);
   const statsSnap = await getDoc(statsRef);
 
-  if (!statsSnap.exists()) return;
+  // Create default stats if not exists
+  if (!statsSnap.exists()) {
+    await setDoc(statsRef, {
+      totalTrainingSessions: 1,
+      totalConsultations: 0,
+      avgScore: score,
+      techniquesUsed: techniquesUsed.reduce((acc, tech) => ({ ...acc, [tech]: 1 }), {}),
+      scoresHistory: [{ date: new Date(), score, sessionId }],
+      strongTechniques: [],
+      weakTechniques: [],
+    });
+    return;
+  }
 
   const currentStats = statsSnap.data();
   const newTotalSessions = (currentStats.totalTrainingSessions || 0) + 1;

@@ -282,6 +282,7 @@ async function endActiveSession(chatId: number, telegramUserId: number) {
 async function handleConversation(message: TelegramMessage) {
   const chatId = message.chat.id;
   const telegramUserId = message.from.id;
+  const userMessage = message.text || '';
   
   // Find linked user with active session
   const usersRef = collection(db, 'users');
@@ -311,12 +312,48 @@ async function handleConversation(message: TelegramMessage) {
     return;
   }
   
-  // Handle message in active session
-  // This would integrate with Gemini for AI responses
-  await sendTelegramMessage(chatId,
-    '🤔 <i>מעבד את ההודעה שלך...</i>\n\n' +
-    '(בגרסה הבאה - אינטגרציה מלאה עם Gemini AI)'
-  );
+  // Send typing indicator
+  await fetch(`${TELEGRAM_API}/sendChatAction`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, action: 'typing' }),
+  });
+  
+  try {
+    // Get AI response from our chat API
+    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'https://negotiation-trainer-rust.vercel.app'}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: userMessage,
+        history: userData.telegramChatHistory || [],
+        mode: userData.activeTelegramSession.type === 'consultation' ? 'consultation' : 'training',
+        difficulty: 3,
+      }),
+    });
+    
+    const data = await response.json();
+    
+    if (data.message) {
+      // Update chat history in Firestore
+      const newHistory = [
+        ...(userData.telegramChatHistory || []),
+        { role: 'user', content: userMessage },
+        { role: 'ai', content: data.message },
+      ].slice(-20); // Keep last 20 messages
+      
+      await updateDoc(doc(db, 'users', userDoc.id), {
+        telegramChatHistory: newHistory,
+      });
+      
+      await sendTelegramMessage(chatId, data.message);
+    }
+  } catch (error) {
+    console.error('Error getting AI response:', error);
+    await sendTelegramMessage(chatId,
+      '⚠️ שגיאה בעיבוד ההודעה. נסה שוב.'
+    );
+  }
 }
 
 export async function POST(request: NextRequest) {
