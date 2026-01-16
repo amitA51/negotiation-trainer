@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase/config';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
 const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
@@ -18,48 +18,52 @@ function generatePairingCode(): string {
 // Create pairing code for user
 export async function POST(request: NextRequest) {
   try {
-    const { userId, action } = await request.json();
+    const body = await request.json();
+    const { userId, action } = body;
+    
+    console.log('[Pairing API] Request received:', { userId, action });
     
     if (!userId) {
       return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
     }
     
     if (action === 'generate') {
-      // Delete existing unused codes for this user
-      const existingRef = collection(db, 'pairingCodes');
-      const q = query(existingRef, where('userId', '==', userId), where('used', '==', false));
-      const existingDocs = await getDocs(q);
-      
-      for (const doc of existingDocs.docs) {
-        await deleteDoc(doc.ref);
+      try {
+        // Generate new code (skip cleanup for now to avoid index issues)
+        const code = generatePairingCode();
+        console.log('[Pairing API] Generated code:', code);
+        
+        await addDoc(collection(db, 'pairingCodes'), {
+          code,
+          userId,
+          used: false,
+          createdAt: serverTimestamp(),
+          expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
+        });
+        console.log('[Pairing API] Code saved to Firestore');
+        
+        const botUsername = 'Negotiationthebot';
+        const deepLink = `https://t.me/${botUsername}?start=${code}`;
+        
+        return NextResponse.json({
+          success: true,
+          code,
+          deepLink,
+          expiresIn: 15 * 60, // seconds
+        });
+      } catch (firestoreError: any) {
+        console.error('[Pairing API] Firestore error:', firestoreError.message, firestoreError.code);
+        return NextResponse.json({ 
+          error: 'Firestore error', 
+          details: firestoreError.message 
+        }, { status: 500 });
       }
-      
-      // Generate new code
-      const code = generatePairingCode();
-      
-      await addDoc(collection(db, 'pairingCodes'), {
-        code,
-        userId,
-        used: false,
-        createdAt: serverTimestamp(),
-        expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
-      });
-      
-      const botUsername = 'Negotiationthebot';
-      const deepLink = `https://t.me/${botUsername}?start=${code}`;
-      
-      return NextResponse.json({
-        success: true,
-        code,
-        deepLink,
-        expiresIn: 15 * 60, // seconds
-      });
     }
     
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-  } catch (error) {
-    console.error('Telegram pairing error:', error);
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('[Pairing API] General error:', error.message);
+    return NextResponse.json({ error: 'Internal error', details: error.message }, { status: 500 });
   }
 }
 
