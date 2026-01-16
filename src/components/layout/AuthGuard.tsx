@@ -20,7 +20,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   }, [user, loading, router]);
 
   if (loading) {
-    return <LoadingScreen message="טוען..." />;
+    return <LoadingScreen message="טוען…" />;
   }
 
   if (!user) {

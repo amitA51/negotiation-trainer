@@ -20,7 +20,7 @@ export function SearchInput({
   value,
   onChange,
   onSearch,
-  placeholder = "חיפוש...",
+  placeholder = "חיפוש…",
   suggestions = [],
   onSuggestionSelect,
   loading,

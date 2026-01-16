@@ -6,7 +6,7 @@ interface PageLoaderProps {
   message?: string;
 }
 
-export function PageLoader({ message = "טוען..." }: PageLoaderProps) {
+export function PageLoader({ message = "טוען…" }: PageLoaderProps) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
       <div className="relative">

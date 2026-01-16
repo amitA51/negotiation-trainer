@@ -220,7 +220,7 @@ export default function ConsultationChatPage({ params }: Props) {
           <ChatInput
             onSend={handleSend}
             disabled={sending}
-            placeholder="שאל שאלה או בקש עצה..."
+            placeholder="שאל שאלה או בקש עצה…"
             allowAttachments={true}
           />
         </div>

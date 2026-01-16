@@ -43,7 +43,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
         ref={ref}
         className={cn(
           "rounded-[var(--radius-lg)]",
-          "transition-all duration-[var(--transition-base)]",
+          "transition-[background-color,border-color,box-shadow] duration-[var(--transition-base)]",
           variants[variant],
           paddings[padding],
           className

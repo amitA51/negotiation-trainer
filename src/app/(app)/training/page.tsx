@@ -409,7 +409,7 @@ export default function TrainingPage() {
 
           <Textarea
             label="תאר את המצב"
-            placeholder="למשל: אני הולך לפגישה עם הבוס שלי לבקש העלאת שכר. הוא נוטה להגיד לא בהתחלה ולדחות את הדיון. אני עובד בחברה 3 שנים והביצועים שלי מצוינים..."
+            placeholder="למשל: אני הולך לפגישה עם הבוס שלי לבקש העלאת שכר. הוא נוטה להגיד לא בהתחלה ולדחות את הדיון. אני עובד בחברה 3 שנים והביצועים שלי מצוינים…"
             value={customScenario}
             onChange={(e) => setCustomScenario(e.target.value)}
             className="min-h-[160px]"

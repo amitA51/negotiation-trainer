@@ -78,7 +78,7 @@ export default function TechniquesPage() {
           {/* Search */}
           <div className="flex-1">
             <Input
-              placeholder="חפש טכניקה..."
+              placeholder="חפש טכניקה…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               icon={<Search size={18} />}

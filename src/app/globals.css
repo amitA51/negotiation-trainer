@@ -82,6 +82,7 @@
 html {
   scroll-behavior: smooth;
   direction: rtl;
+  color-scheme: dark;
 }
 
 body {
@@ -159,6 +160,12 @@ h5 { font-size: 1.125rem; line-height: 1.4; }
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* === Touch Optimization === */
+button, a, [role="button"], input[type="submit"], input[type="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* === Animations === */

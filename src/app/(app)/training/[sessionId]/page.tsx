@@ -274,7 +274,7 @@ export default function TrainingSessionPage({ params }: Props) {
           <ChatInput
             onSend={handleSend}
             disabled={sending}
-            placeholder="כתוב את התשובה שלך..."
+            placeholder="כתוב את התשובה שלך…"
           />
         </div>
       </div>
