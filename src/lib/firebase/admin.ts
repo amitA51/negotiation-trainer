@@ -19,7 +19,17 @@ function getAdminApp(): App {
   // Trim all values to remove any whitespace/newlines that may have been added
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim();
   const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL?.trim();
-  const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.trim().replace(/\\n/g, '\n');
+  
+  // Handle private key - support both formats:
+  // 1. Actual newlines (from JSON file paste)
+  // 2. Escaped \n characters (from single-line paste)
+  let privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.trim();
+  if (privateKey) {
+    // Replace escaped newlines with actual newlines
+    privateKey = privateKey.replace(/\\n/g, '\n');
+    // Also handle double-escaped newlines (\\n -> \n)
+    privateKey = privateKey.replace(/\\\\n/g, '\n');
+  }
   
   try {
     if (clientEmail && privateKey) {
