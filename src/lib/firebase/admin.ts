@@ -23,12 +23,26 @@ function getAdminApp(): App {
   // Handle private key - support both formats:
   // 1. Actual newlines (from JSON file paste)
   // 2. Escaped \n characters (from single-line paste)
-  let privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.trim();
+  let privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY;
   if (privateKey) {
-    // Replace escaped newlines with actual newlines
-    privateKey = privateKey.replace(/\\n/g, '\n');
-    // Also handle double-escaped newlines (\\n -> \n)
-    privateKey = privateKey.replace(/\\\\n/g, '\n');
+    // Log first 50 chars for debugging (safe - doesn't expose key)
+    console.log('[Firebase Admin] Private key starts with:', privateKey.substring(0, 50));
+    console.log('[Firebase Admin] Private key length:', privateKey.length);
+    
+    // Trim whitespace
+    privateKey = privateKey.trim();
+    
+    // Replace literal \n strings with actual newlines
+    if (privateKey.includes('\\n')) {
+      console.log('[Firebase Admin] Found escaped newlines, replacing...');
+      privateKey = privateKey.split('\\n').join('\n');
+    }
+    
+    // Log result
+    console.log('[Firebase Admin] After processing, starts with:', privateKey.substring(0, 30));
+    console.log('[Firebase Admin] Contains newlines:', privateKey.includes('\n'));
+  } else {
+    console.log('[Firebase Admin] No private key found!');
   }
   
   try {
