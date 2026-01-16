@@ -20,6 +20,12 @@ if (typeof window !== "undefined") {
     console.error("Firebase config is missing! Check your environment variables.");
   } else {
     console.log("Firebase config loaded for project:", firebaseConfig.projectId);
+    console.log("API Key Check:", {
+      length: firebaseConfig.apiKey.length,
+      start: firebaseConfig.apiKey.substring(0, 5),
+      end: firebaseConfig.apiKey.substring(firebaseConfig.apiKey.length - 5),
+      hasWhitespace: /\s/.test(firebaseConfig.apiKey)
+    });
   }
 }
 
