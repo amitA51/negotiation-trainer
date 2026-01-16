@@ -49,11 +49,19 @@
   --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.7);
   --shadow-glow: 0 0 20px var(--accent-glow);
   
+  /* Spacing - Apple-style generous */
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 20px;
+  --space-lg: 32px;
+  --space-xl: 48px;
+  --space-2xl: 64px;
+  
   /* Spacing */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
   --radius-full: 9999px;
   
   /* Transitions */
@@ -100,13 +108,27 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--text-primary);
+  text-wrap: balance;
 }
 
-h1 { font-size: 2.5rem; line-height: 1.2; }
-h2 { font-size: 2rem; line-height: 1.25; }
-h3 { font-size: 1.5rem; line-height: 1.3; }
-h4 { font-size: 1.25rem; line-height: 1.4; }
-h5 { font-size: 1rem; line-height: 1.5; }
+h1 { font-size: 2.75rem; line-height: 1.15; }
+h2 { font-size: 2.125rem; line-height: 1.2; }
+h3 { font-size: 1.625rem; line-height: 1.25; }
+h4 { font-size: 1.375rem; line-height: 1.35; }
+h5 { font-size: 1.125rem; line-height: 1.4; }
+
+/* Tabular numbers for stats */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Large display text */
+.display-text {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
 
 /* === Scrollbar Styling === */
 ::-webkit-scrollbar {
@@ -274,9 +296,9 @@ h5 { font-size: 1rem; line-height: 1.5; }
 
 /* === Glass Effect === */
 .glass {
-  background: rgba(15, 15, 18, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(15, 15, 18, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--border-subtle);
 }
 
@@ -285,7 +307,7 @@ h5 { font-size: 1rem; line-height: 1.5; }
   background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  transition: all var(--transition-base);
+  transition: background-color var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
 }
 
 .card:hover {
@@ -312,11 +334,11 @@ h5 { font-size: 1rem; line-height: 1.5; }
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 24px;
+  padding: 14px 28px;
   font-weight: 500;
   font-size: 0.95rem;
   border-radius: var(--radius-md);
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
   cursor: pointer;
   border: none;
   outline: none;
@@ -367,13 +389,13 @@ h5 { font-size: 1rem; line-height: 1.5; }
 /* === Input Styles === */
 .input {
   width: 100%;
-  padding: 12px 16px;
+  padding: 14px 18px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   color: var(--text-primary);
   font-size: 1rem;
-  transition: all var(--transition-fast);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .input::placeholder {
@@ -659,7 +681,7 @@ h5 { font-size: 1rem; line-height: 1.5; }
 
 /* === Hover Lift Effect === */
 .hover-lift {
-  transition: all var(--transition-base);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
 
 .hover-lift:hover {
@@ -671,7 +693,7 @@ h5 { font-size: 1rem; line-height: 1.5; }
 
 /* === Glowing Border on Hover === */
 .glow-border {
-  transition: all var(--transition-base);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
 }
 
 .glow-border:hover {
@@ -758,22 +780,17 @@ h5 { font-size: 1rem; line-height: 1.5; }
 /* === Depth Shadow Layers === */
 .depth-shadow {
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.3),
-    0 2px 4px rgba(0, 0, 0, 0.25),
-    0 4px 8px rgba(0, 0, 0, 0.2),
-    0 8px 16px rgba(0, 0, 0, 0.15),
-    0 16px 32px rgba(0, 0, 0, 0.1);
+    0 1px 3px rgba(0, 0, 0, 0.2),
+    0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* === Glassmorphism Cards === */
 .glass-card {
-  background: rgba(22, 22, 25, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(22, 22, 25, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 /* === Interactive Ripple Effect === */
@@ -1306,4 +1323,127 @@ input:-webkit-autofill:focus {
   -webkit-text-fill-color: var(--text-primary);
   -webkit-box-shadow: 0 0 0px 1000px var(--bg-secondary) inset;
   transition: background-color 5000s ease-in-out 0s;
+}
+
+/* ============================================
+   APPLE-STYLE MINIMALISM UTILITIES
+   ============================================ */
+
+/* Clean card without hover effects */
+.card-clean {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+}
+
+/* Subtle hover - just border change */
+.hover-subtle {
+  transition: border-color var(--transition-fast);
+}
+.hover-subtle:hover {
+  border-color: var(--border-default);
+}
+
+/* Minimal section spacing */
+.section-spacing {
+  padding-block: var(--space-xl);
+}
+
+/* Content max-width for readability */
+.content-prose {
+  max-width: 65ch;
+}
+
+/* Fade in animation - simpler */
+.fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Slide up animation - reduced motion */
+.slide-up {
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+/* Stats number styling */
+.stat-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+/* Metric card - Apple style */
+.metric-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-lg);
+  transition: border-color var(--transition-fast);
+}
+.metric-card:hover {
+  border-color: var(--border-default);
+}
+
+/* Clean icon container */
+.icon-container {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Accent border left */
+.accent-border-r {
+  border-right: 3px solid var(--accent);
+}
+
+/* Minimal link hover */
+.link-minimal {
+  color: var(--text-secondary);
+  transition: color var(--transition-fast);
+}
+.link-minimal:hover {
+  color: var(--text-primary);
+}
+
+/* Section title */
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-md);
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: var(--space-2xl) var(--space-lg);
+  color: var(--text-muted);
+}
+
+/* Grid with consistent gaps */
+.grid-cards {
+  display: grid;
+  gap: var(--space-md);
+}
+
+/* Responsive grid */
+@media (min-width: 768px) {
+  .grid-cards-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-cards-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-cards-4 { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* Clean list item */
+.list-item-clean {
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  transition: background-color var(--transition-fast);
+}
+.list-item-clean:hover {
+  background: var(--bg-hover);
 }

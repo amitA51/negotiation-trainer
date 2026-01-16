@@ -17,7 +17,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button, Card, Badge, Avatar } from "@/components/ui";
+import { Button, Badge, Avatar } from "@/components/ui";
 import { signOut } from "@/lib/firebase/auth";
 import { updateUserSettings } from "@/lib/firebase/firestore";
 import { cn, getDifficultyInfo } from "@/lib/utils";
@@ -115,17 +115,11 @@ export default function SettingsPage() {
   const difficultyInfo = getDifficultyInfo(preferredDifficulty);
 
   return (
-    <div className="max-w-3xl mx-auto relative min-h-screen pb-20">
-      {/* Decorative Background */}
-      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--accent)]/5 rounded-full blur-[100px]" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-500/5 rounded-full blur-[100px]" />
-      </div>
-
+    <div className="max-w-3xl mx-auto">
       {/* Header */}
-      <div className="mb-8 animate-fade-in-up">
+      <div className="mb-8 fade-in">
         <h1 className="text-3xl font-bold text-[var(--text-primary)] flex items-center gap-3">
-          <Settings className="text-[var(--accent)]" />
+          <Settings className="text-[var(--accent)]" size={28} />
           הגדרות חשבון
         </h1>
         <p className="text-[var(--text-secondary)] mt-2">
@@ -133,24 +127,19 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* Profile Card */}
-        <section className="relative overflow-hidden rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-6 md:p-8 animate-fade-in-up stagger-1 group hover:border-[var(--accent-dark)] transition-all duration-300">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent)]/5 rounded-full blur-2xl -mr-10 -mt-10" />
-          
-          <div className="flex flex-col md:flex-row items-center gap-6 text-center md:text-right">
-            <div className="relative">
-              <div className="absolute inset-0 bg-[var(--accent)] rounded-full blur opacity-20 group-hover:opacity-40 transition-opacity" />
-              <Avatar src={user?.photoURL} name={user?.displayName} size="xl" className="relative w-24 h-24 border-2 border-[var(--bg-primary)] shadow-xl" />
-            </div>
+        <section className="rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] p-6 slide-up">
+          <div className="flex flex-col md:flex-row items-center gap-5 text-center md:text-right">
+            <Avatar src={user?.photoURL} name={user?.displayName} size="xl" className="w-20 h-20" />
             
             <div className="flex-1">
-              <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-1">
+              <h2 className="text-xl font-bold text-[var(--text-primary)] mb-1">
                 {user?.displayName || "משתמש"}
               </h2>
-              <div className="flex items-center justify-center md:justify-start gap-2 text-[var(--text-muted)] mb-4">
+              <div className="flex items-center justify-center md:justify-start gap-2 text-[var(--text-muted)] mb-3">
                 <User size={14} />
-                <span>{user?.email}</span>
+                <span className="text-sm">{user?.email}</span>
               </div>
               <Badge variant="default">התוכנית החינמית</Badge>
             </div>
@@ -167,15 +156,15 @@ export default function SettingsPage() {
         </section>
 
         {/* Preferences */}
-        <section className="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-6 md:p-8 animate-fade-in-up stagger-2">
-          <div className="flex items-center justify-between mb-6">
+        <section className="rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] p-6 slide-up" style={{ animationDelay: "50ms" }}>
+          <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-[var(--accent-subtle)] text-[var(--accent)]">
+              <div className="w-10 h-10 rounded-xl bg-[var(--accent-subtle)] flex items-center justify-center text-[var(--accent)]">
                 <Shield size={20} />
               </div>
               <div>
-                <h3 className="font-bold text-lg text-[var(--text-primary)]">רמת קושי מועדפת</h3>
-                <p className="text-sm text-[var(--text-secondary)]">רמת הקושי ההתחלתית לכל אימון חדש</p>
+                <h3 className="font-semibold text-[var(--text-primary)]">רמת קושי מועדפת</h3>
+                <p className="text-sm text-[var(--text-muted)]">רמה התחלתית לכל אימון חדש</p>
               </div>
             </div>
             <Button
@@ -183,66 +172,59 @@ export default function SettingsPage() {
               size="sm"
               onClick={handleSaveDifficulty}
               loading={saving}
-              className="text-[var(--accent)] hover:text-[var(--accent-light)] hover:bg-[var(--accent-subtle)]"
-              icon={<Save size={16} />}
+              className="text-[var(--accent)]"
+              icon={<Save size={14} />}
             >
-              שמור שינויים
+              שמור
             </Button>
           </div>
 
-          <div className="grid grid-cols-4 md:grid-cols-8 gap-3 mb-6">
+          <div className="grid grid-cols-4 md:grid-cols-8 gap-2 mb-5">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((level) => (
               <button
                 key={level}
                 onClick={() => setPreferredDifficulty(level)}
                 className={cn(
-                  "aspect-square rounded-2xl flex items-center justify-center transition-all duration-300 relative overflow-hidden group",
+                  "aspect-square rounded-xl flex items-center justify-center transition-colors",
                   preferredDifficulty === level
-                    ? "bg-[var(--accent)] text-black shadow-[0_0_20px_var(--accent-glow)] scale-105"
-                    : "bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] border border-[var(--border-subtle)]"
+                    ? "bg-[var(--accent)] text-black"
+                    : "bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)]"
                 )}
               >
-                {preferredDifficulty === level && (
-                  <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent" />
-                )}
-                <span className="text-xl font-bold relative z-10">{level}</span>
+                <span className="text-lg font-bold">{level}</span>
               </button>
             ))}
           </div>
 
           <div className={cn(
-            "rounded-xl p-4 border transition-colors duration-300",
-            preferredDifficulty <= 3 ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500" :
-            preferredDifficulty <= 5 ? "bg-amber-500/10 border-amber-500/20 text-amber-500" :
-            "bg-red-500/10 border-red-500/20 text-red-500"
+            "rounded-lg p-3 text-sm",
+            preferredDifficulty <= 3 ? "bg-emerald-500/10 text-emerald-500" :
+            preferredDifficulty <= 5 ? "bg-amber-500/10 text-amber-500" :
+            "bg-red-500/10 text-red-500"
           )}>
-            <div className="font-bold mb-1 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-current" />
-              {difficultyInfo.name}
-            </div>
-            <p className="text-sm opacity-90">
-              {difficultyInfo.description}
-            </p>
+            <span className="font-medium">{difficultyInfo.name}</span>
+            <span className="mx-2">·</span>
+            <span className="opacity-80">{difficultyInfo.description}</span>
           </div>
         </section>
 
         {/* Telegram Integration */}
-        <section className="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-6 md:p-8 animate-fade-in-up stagger-3">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500">
+        <section className="rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] p-6 slide-up" style={{ animationDelay: "100ms" }}>
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
               <Smartphone size={20} />
             </div>
             <div>
-              <h3 className="font-bold text-lg text-[var(--text-primary)]">חיבור לטלגרם</h3>
-              <p className="text-sm text-[var(--text-secondary)]">התאמן ישירות דרך הטלגרם</p>
+              <h3 className="font-semibold text-[var(--text-primary)]">חיבור לטלגרם</h3>
+              <p className="text-sm text-[var(--text-muted)]">התאמן ישירות דרך הטלגרם</p>
             </div>
           </div>
 
           {user?.telegramChatId ? (
-            <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--bg-hover)] border border-[var(--border-subtle)]">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-500">
-                  <Check size={20} />
+                <div className="w-9 h-9 rounded-full bg-green-500/20 flex items-center justify-center text-green-500">
+                  <Check size={18} />
                 </div>
                 <div>
                   <p className="font-medium text-[var(--text-primary)]">מחובר בהצלחה</p>
@@ -251,53 +233,52 @@ export default function SettingsPage() {
                   </p>
                 </div>
               </div>
-              <Button variant="ghost" className="text-red-500 hover:text-red-400 hover:bg-red-500/10" icon={<Trash2 size={16} />}>
+              <Button variant="ghost" className="text-red-500 hover:bg-red-500/10" icon={<Trash2 size={14} />}>
                 נתק
               </Button>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div>
               {!linkingCode ? (
                 <div className="text-center py-6">
-                  <div className="w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center mx-auto mb-4">
-                    <Link2 size={32} />
+                  <div className="w-14 h-14 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center mx-auto mb-4">
+                    <Link2 size={28} />
                   </div>
-                  <p className="text-[var(--text-secondary)] mb-6 max-w-sm mx-auto">
-                    חבר את חשבון הטלגרם שלך כדי לקבל תזכורות ולהתאמן בשיחות צ'אט מהירות
+                  <p className="text-[var(--text-secondary)] mb-5 text-sm max-w-sm mx-auto">
+                    חבר את חשבון הטלגרם שלך כדי לקבל תזכורות ולהתאמן בשיחות צ'אט
                   </p>
                   <Button
                     variant="primary"
                     onClick={handleGenerateCode}
                     loading={generatingCode}
-                    className="w-full md:w-auto min-w-[200px]"
                   >
                     צור קוד חיבור
                   </Button>
                 </div>
               ) : (
-                <div className="animate-fade-in">
-                  <div className="grid md:grid-cols-2 gap-6">
+                <div className="fade-in">
+                  <div className="grid md:grid-cols-2 gap-5">
                     <div className="space-y-4">
-                      <div className="bg-[var(--bg-elevated)] p-4 rounded-xl border border-[var(--border-subtle)]">
+                      <div className="bg-[var(--bg-hover)] p-4 rounded-xl border border-[var(--border-subtle)]">
                         <label className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider mb-2 block">
                           קוד החיבור שלך
                         </label>
                         <div className="flex items-center gap-2">
-                          <code className="flex-1 font-mono text-3xl text-[var(--accent)] font-bold tracking-widest text-center py-2">
+                          <code className="flex-1 font-mono text-2xl text-[var(--accent)] font-bold tracking-widest text-center py-2">
                             {linkingCode}
                           </code>
                           <Button
                             variant="secondary"
                             size="sm"
                             onClick={handleCopyCode}
-                            className="h-10 w-10 p-0"
+                            className="h-9 w-9 p-0"
                           >
-                            {copied ? <Check size={16} /> : <Copy size={16} />}
+                            {copied ? <Check size={14} /> : <Copy size={14} />}
                           </Button>
                         </div>
                         {codeExpiresIn && codeExpiresIn > 0 && (
                           <div className="mt-3 flex items-center justify-center gap-2 text-xs text-[var(--text-muted)]">
-                            <RefreshCw size={12} className={cn("animate-spin")} style={{ animationDuration: '3s' }} />
+                            <RefreshCw size={10} className="animate-spin" style={{ animationDuration: '3s' }} />
                             פג תוקף בעוד <span className="font-mono text-[var(--accent)]">{formatTime(codeExpiresIn)}</span>
                           </div>
                         )}
@@ -308,7 +289,7 @@ export default function SettingsPage() {
                           variant="primary"
                           className="flex-1"
                           onClick={handleOpenTelegram}
-                          icon={<ExternalLink size={16} />}
+                          icon={<ExternalLink size={14} />}
                         >
                           פתח בוט
                         </Button>
@@ -316,20 +297,20 @@ export default function SettingsPage() {
                           variant="ghost"
                           onClick={handleGenerateCode}
                           loading={generatingCode}
-                          icon={<RefreshCw size={16} />}
+                          icon={<RefreshCw size={14} />}
                         >
                           חדש
                         </Button>
                       </div>
                     </div>
 
-                    <div className="bg-[var(--bg-elevated)]/50 p-5 rounded-xl border border-[var(--border-subtle)] flex flex-col justify-center">
-                      <h4 className="font-medium text-[var(--text-primary)] mb-3 flex items-center gap-2">
-                        <Smartphone size={16} className="text-[var(--text-muted)]" />
+                    <div className="bg-[var(--bg-hover)] p-4 rounded-xl border border-[var(--border-subtle)]">
+                      <h4 className="font-medium text-[var(--text-primary)] mb-3 flex items-center gap-2 text-sm">
+                        <Smartphone size={14} className="text-[var(--text-muted)]" />
                         איך מתחברים?
                       </h4>
-                      <ol className="space-y-3 text-sm text-[var(--text-secondary)] list-decimal list-inside">
-                        <li>לחץ על <strong>פתח בוט</strong> או חפש <code className="text-[var(--accent)] bg-[var(--accent-subtle)] px-1 rounded">@{TELEGRAM_BOT_USERNAME}</code></li>
+                      <ol className="space-y-2 text-sm text-[var(--text-secondary)] list-decimal list-inside">
+                        <li>לחץ על <strong>פתח בוט</strong> או חפש <code className="text-[var(--accent)] text-xs">@{TELEGRAM_BOT_USERNAME}</code></li>
                         <li>לחץ על <strong>Start</strong> בטלגרם</li>
                         <li>שלח את הקוד שמופיע כאן</li>
                         <li>זהו! החשבון מחובר</li>
@@ -343,17 +324,17 @@ export default function SettingsPage() {
         </section>
 
         {/* Danger Zone */}
-        <section className="rounded-3xl border border-red-900/20 bg-red-900/5 p-6 animate-fade-in-up stagger-4">
+        <section className="rounded-2xl border border-red-900/20 bg-red-900/5 p-6 slide-up" style={{ animationDelay: "150ms" }}>
           <div className="flex items-start gap-4">
-            <div className="p-2.5 rounded-xl bg-red-500/10 text-red-500 shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500 shrink-0">
               <AlertTriangle size={20} />
             </div>
             <div className="flex-1">
-              <h3 className="font-bold text-lg text-[var(--text-primary)] mb-1">אזור מסוכן</h3>
+              <h3 className="font-semibold text-[var(--text-primary)] mb-1">אזור מסוכן</h3>
               <p className="text-sm text-[var(--text-secondary)] mb-4">
-                מחיקת החשבון היא פעולה בלתי הפיכה. כל הנתונים, האימונים וההיסטוריה יימחקו לצמיתות.
+                מחיקת החשבון היא פעולה בלתי הפיכה. כל הנתונים יימחקו לצמיתות.
               </p>
-              <Button variant="ghost" className="text-red-500 hover:bg-red-500/10 hover:text-red-600 border border-red-900/30">
+              <Button variant="ghost" className="text-red-500 hover:bg-red-500/10 border border-red-900/30">
                 מחק חשבון
               </Button>
             </div>

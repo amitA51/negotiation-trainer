@@ -92,169 +92,148 @@ export default function StatsPage() {
 
   if (loading) {
     return (
-      <div className="max-w-6xl mx-auto p-4 space-y-6">
-        <div className="flex justify-between items-end">
-          <Skeleton className="h-12 w-64" />
-          <Skeleton className="h-8 w-32" />
-        </div>
+      <div className="max-w-5xl mx-auto space-y-6">
+        <Skeleton className="h-12 w-64" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-40 rounded-3xl" />
+            <Skeleton key={i} className="h-32 rounded-2xl" />
           ))}
         </div>
-        <div className="grid md:grid-cols-3 gap-6">
-          <Skeleton className="h-96 md:col-span-2 rounded-3xl" />
-          <Skeleton className="h-96 rounded-3xl" />
+        <div className="grid md:grid-cols-3 gap-5">
+          <Skeleton className="h-80 md:col-span-2 rounded-2xl" />
+          <Skeleton className="h-80 rounded-2xl" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto relative">
-      {/* Decorative Background */}
-      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[var(--accent)]/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[var(--accent-dark)]/5 rounded-full blur-[120px]" />
-      </div>
-
+    <div className="max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 animate-fade-in-up">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 fade-in">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)] flex items-center gap-3">
-            <Activity className="text-[var(--accent)]" />
+          <h1 className="text-3xl font-bold text-[var(--text-primary)] flex items-center gap-3">
+            <Activity className="text-[var(--accent)]" size={28} />
             הביצועים שלי
           </h1>
-          <p className="text-[var(--text-secondary)] mt-2 text-lg">
-            ניתוח מעמיק של התקדמות המשא ומתן שלך
+          <p className="text-[var(--text-secondary)] mt-2">
+            ניתוח התקדמות המשא ומתן שלך
           </p>
         </div>
         
         {stats && (
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-sm font-medium text-[var(--text-secondary)]">
-            <Calendar size={16} />
-            עודכן לאחרונה: {new Date().toLocaleDateString("he-IL")}
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-sm text-[var(--text-muted)]">
+            <Calendar size={14} />
+            עודכן: {new Date().toLocaleDateString("he-IL")}
           </div>
         )}
       </div>
 
-      {/* Key Metrics Grid (Bento) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {/* Key Metrics Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {/* Total Sessions */}
-        <div className="relative overflow-hidden rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-6 group hover:border-[var(--accent-dark)] transition-all duration-300 animate-fade-in-up stagger-1">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--info)]/5 rounded-full blur-2xl -mr-10 -mt-10" />
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 rounded-2xl bg-[var(--info-subtle)] text-[var(--info)]">
-              <Target size={24} />
+        <div className="p-5 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] slide-up" style={{ animationDelay: "0ms" }}>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-[var(--info-subtle)] flex items-center justify-center">
+              <Target size={20} className="text-[var(--info)]" />
             </div>
           </div>
-          <div>
-            <p className="text-[var(--text-muted)] font-medium mb-1">סה״כ אימונים</p>
-            <h3 className="text-3xl font-bold text-[var(--text-primary)]">
-              {stats?.totalTrainingSessions || 0}
-            </h3>
-          </div>
+          <p className="text-sm text-[var(--text-muted)] mb-1">סה״כ אימונים</p>
+          <p className="text-2xl font-bold text-[var(--text-primary)] tabular-nums">
+            {stats?.totalTrainingSessions || 0}
+          </p>
         </div>
 
         {/* Average Score */}
-        <div className="relative overflow-hidden rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-6 group hover:border-[var(--accent-dark)] transition-all duration-300 animate-fade-in-up stagger-2">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--success)]/5 rounded-full blur-2xl -mr-10 -mt-10" />
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 rounded-2xl bg-[var(--success-subtle)] text-[var(--success)]">
-              <Trophy size={24} />
+        <div className="p-5 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] slide-up" style={{ animationDelay: "50ms" }}>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-[var(--success-subtle)] flex items-center justify-center">
+              <Trophy size={20} className="text-[var(--success)]" />
             </div>
           </div>
-          <div>
-            <p className="text-[var(--text-muted)] font-medium mb-1">ציון ממוצע</p>
-            <h3 className={cn("text-3xl font-bold", getScoreColor(stats?.avgScore || 0))}>
-              {stats?.avgScore || 0}
-            </h3>
-          </div>
+          <p className="text-sm text-[var(--text-muted)] mb-1">ציון ממוצע</p>
+          <p className={cn("text-2xl font-bold tabular-nums", getScoreColor(stats?.avgScore || 0))}>
+            {stats?.avgScore || 0}
+          </p>
         </div>
 
         {/* Consultations */}
-        <div className="relative overflow-hidden rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-6 group hover:border-[var(--accent-dark)] transition-all duration-300 animate-fade-in-up stagger-3">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--warning)]/5 rounded-full blur-2xl -mr-10 -mt-10" />
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 rounded-2xl bg-[var(--warning-subtle)] text-[var(--warning)]">
-              <MessageSquare size={24} />
+        <div className="p-5 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] slide-up" style={{ animationDelay: "100ms" }}>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-[var(--warning-subtle)] flex items-center justify-center">
+              <MessageSquare size={20} className="text-[var(--warning)]" />
             </div>
           </div>
-          <div>
-            <p className="text-[var(--text-muted)] font-medium mb-1">ייעוצים שבוצעו</p>
-            <h3 className="text-3xl font-bold text-[var(--text-primary)]">
-              {stats?.totalConsultations || 0}
-            </h3>
-          </div>
+          <p className="text-sm text-[var(--text-muted)] mb-1">ייעוצים</p>
+          <p className="text-2xl font-bold text-[var(--text-primary)] tabular-nums">
+            {stats?.totalConsultations || 0}
+          </p>
         </div>
 
-        {/* XP / Level (Placeholder for future feature) */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[var(--accent-dark)]/20 to-[var(--bg-card)] border border-[var(--accent-dark)] p-6 group hover:shadow-[0_0_30px_rgba(var(--accent-rgb),0.1)] transition-all duration-300 animate-fade-in-up stagger-4">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--accent)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 rounded-2xl bg-[var(--accent)] text-black shadow-[0_0_15px_var(--accent-glow)]">
-              <Zap size={24} fill="currentColor" />
+        {/* Level */}
+        <div className="p-5 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--accent-dark)] slide-up" style={{ animationDelay: "150ms" }}>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-[var(--accent)] flex items-center justify-center">
+              <Zap size={20} className="text-black" fill="currentColor" />
             </div>
           </div>
-          <div>
-            <p className="text-[var(--accent)] font-medium mb-1">רמה נוכחית</p>
-            <h3 className="text-3xl font-bold text-[var(--text-primary)]">
-              {Math.floor((stats?.totalTrainingSessions || 0) / 5) + 1}
-            </h3>
-            <div className="mt-3 h-1.5 w-full bg-[var(--bg-elevated)] rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-[var(--accent)] shadow-[0_0_10px_var(--accent)]" 
-                style={{ width: `${((stats?.totalTrainingSessions || 0) % 5) * 20}%` }}
-              />
-            </div>
+          <p className="text-sm text-[var(--accent)] mb-1">רמה נוכחית</p>
+          <p className="text-2xl font-bold text-[var(--text-primary)] tabular-nums">
+            {Math.floor((stats?.totalTrainingSessions || 0) / 5) + 1}
+          </p>
+          <div className="mt-2 h-1 w-full bg-[var(--bg-hover)] rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-[var(--accent)]" 
+              style={{ width: `${((stats?.totalTrainingSessions || 0) % 5) * 20}%` }}
+            />
           </div>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-3 gap-5">
         {/* Main Chart */}
-        <div className="md:col-span-2 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-6 animate-fade-in-up stagger-5">
-          <div className="flex items-center justify-between mb-8">
+        <div className="md:col-span-2 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] p-6 slide-up" style={{ animationDelay: "200ms" }}>
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
-                <TrendingUp size={20} className="text-[var(--accent)]" />
+              <h3 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                <TrendingUp size={18} className="text-[var(--accent)]" />
                 מגמת שיפור
               </h3>
-              <p className="text-sm text-[var(--text-secondary)]">התקדמות הציונים ב-20 האימונים האחרונים</p>
+              <p className="text-sm text-[var(--text-muted)]">20 האימונים האחרונים</p>
             </div>
           </div>
           
-          <div className="h-[300px] w-full">
+          <div className="h-[260px] w-full">
             {chartData.length > 1 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.3}/>
+                      <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.2}/>
                       <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" opacity={0.5} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" opacity={0.3} />
                   <XAxis 
                     dataKey="name" 
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
+                    tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
                     dy={10}
                   />
                   <YAxis 
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
+                    tick={{ fill: 'var(--text-muted)', fontSize: 11 }}
                     domain={[0, 100]}
                   />
                   <Tooltip
                     content={({ active, payload, label }) => {
                       if (active && payload && payload.length) {
                         return (
-                          <div className="bg-[var(--bg-elevated)] border border-[var(--border-subtle)] p-3 rounded-xl shadow-xl backdrop-blur-md">
-                            <p className="text-[var(--text-muted)] text-xs mb-1">אימון מס׳ {label}</p>
-                            <p className="text-[var(--accent)] font-bold text-lg">
+                          <div className="bg-[var(--bg-elevated)] border border-[var(--border-subtle)] px-3 py-2 rounded-lg shadow-lg">
+                            <p className="text-[var(--text-muted)] text-xs">אימון {label}</p>
+                            <p className="text-[var(--accent)] font-semibold">
                               ציון: {payload[0].value}
                             </p>
                           </div>
@@ -267,7 +246,7 @@ export default function StatsPage() {
                     type="monotone" 
                     dataKey="score" 
                     stroke="var(--accent)" 
-                    strokeWidth={3}
+                    strokeWidth={2}
                     fillOpacity={1} 
                     fill="url(#colorScore)" 
                   />
@@ -275,40 +254,40 @@ export default function StatsPage() {
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex flex-col items-center justify-center text-[var(--text-muted)]">
-                <BarChart2 size={48} className="mb-4 opacity-20" />
-                <p>אין מספיק נתונים להצגת גרף</p>
+                <BarChart2 size={40} className="mb-3 opacity-30" />
+                <p className="text-sm">אין מספיק נתונים להצגת גרף</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Top Techniques */}
-        <div className="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-6 animate-fade-in-up stagger-6">
-          <h3 className="text-xl font-bold text-[var(--text-primary)] mb-6 flex items-center gap-2">
-            <Award size={20} className="text-[var(--accent)]" />
+        <div className="rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] p-6 slide-up" style={{ animationDelay: "250ms" }}>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-5 flex items-center gap-2">
+            <Award size={18} className="text-[var(--accent)]" />
             ארגז הכלים שלי
           </h3>
           
           {topTechniques.length > 0 ? (
-            <div className="space-y-6">
+            <div className="space-y-5">
               {topTechniques.map(({ technique, count }, index) => {
                 if (!technique) return null;
                 const maxCount = topTechniques[0].count;
                 const percentage = (count / maxCount) * 100;
 
                 return (
-                  <div key={technique.code} className="group">
+                  <div key={technique.code}>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">
+                      <span className="text-sm font-medium text-[var(--text-primary)]">
                         {technique.name}
                       </span>
-                      <span className="text-xs font-mono text-[var(--text-muted)] bg-[var(--bg-elevated)] px-2 py-0.5 rounded-md">
-                        {count} שימושים
+                      <span className="text-xs text-[var(--text-muted)] tabular-nums">
+                        {count}
                       </span>
                     </div>
-                    <div className="h-2 w-full bg-[var(--bg-elevated)] rounded-full overflow-hidden">
+                    <div className="h-1.5 w-full bg-[var(--bg-hover)] rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-gradient-to-r from-[var(--accent-dark)] to-[var(--accent)] rounded-full transition-all duration-1000 ease-out"
+                        className="h-full bg-[var(--accent)] rounded-full"
                         style={{ width: `${percentage}%` }}
                       />
                     </div>
@@ -317,20 +296,18 @@ export default function StatsPage() {
               })}
             </div>
           ) : (
-            <div className="h-[200px] flex flex-col items-center justify-center text-[var(--text-muted)] text-center">
-              <p>עדיין לא השתמשת בטכניקות</p>
-              <p className="text-sm mt-2">השתמש בטכניקות במהלך אימון כדי לראות אותן כאן</p>
+            <div className="h-[180px] flex flex-col items-center justify-center text-[var(--text-muted)] text-center">
+              <p className="text-sm">עדיין לא השתמשת בטכניקות</p>
+              <p className="text-xs mt-1 opacity-70">התחל אימון כדי לראות נתונים</p>
             </div>
           )}
         </div>
       </div>
       
       {!stats || (stats.totalTrainingSessions === 0 && stats.totalConsultations === 0) ? (
-        <div className="mt-8 text-center animate-fade-in-up stagger-7">
-          <p className="text-[var(--text-muted)]">
-            טיפ: ככל שתתאמן יותר, כך הגרפים יהיו מדויקים יותר ויעזרו לך להשתפר.
-          </p>
-        </div>
+        <p className="mt-8 text-center text-sm text-[var(--text-muted)] fade-in">
+          טיפ: ככל שתתאמן יותר, כך הגרפים יהיו מדויקים יותר
+        </p>
       ) : null}
     </div>
   );
