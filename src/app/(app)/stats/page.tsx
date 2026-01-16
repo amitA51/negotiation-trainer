@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import dynamic from "next/dynamic";
 import {
   Target,
   TrendingUp,
@@ -11,25 +12,39 @@ import {
   Zap,
   Activity,
   Trophy,
-  ArrowUpRight,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, Spinner, Skeleton, Progress } from "@/components/ui";
+import { Skeleton } from "@/components/ui";
 import { getUserStats } from "@/lib/firebase/firestore";
 import { techniques } from "@/data/techniques";
 import { cn, getScoreColor } from "@/lib/utils";
 import type { UserStats } from "@/types";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  CartesianGrid
-} from "recharts";
+
+// Dynamically import Recharts to reduce initial bundle size
+const ResponsiveContainer = dynamic(
+  () => import("recharts").then((mod) => mod.ResponsiveContainer),
+  { ssr: false, loading: () => <Skeleton className="h-full w-full rounded-xl" /> }
+);
+const AreaChart = dynamic(
+  () => import("recharts").then((mod) => mod.AreaChart),
+  { ssr: false }
+);
+const Area = dynamic(() => import("recharts").then((mod) => mod.Area), {
+  ssr: false,
+});
+const XAxis = dynamic(() => import("recharts").then((mod) => mod.XAxis), {
+  ssr: false,
+});
+const YAxis = dynamic(() => import("recharts").then((mod) => mod.YAxis), {
+  ssr: false,
+});
+const Tooltip = dynamic(() => import("recharts").then((mod) => mod.Tooltip), {
+  ssr: false,
+});
+const CartesianGrid = dynamic(
+  () => import("recharts").then((mod) => mod.CartesianGrid),
+  { ssr: false }
+);
 
 export default function StatsPage() {
   const { user } = useAuth();
@@ -132,9 +147,6 @@ export default function StatsPage() {
             <div className="p-3 rounded-2xl bg-[var(--info-subtle)] text-[var(--info)]">
               <Target size={24} />
             </div>
-            {/* <span className="flex items-center gap-1 text-xs font-medium text-[var(--success)] bg-[var(--success-subtle)] px-2 py-1 rounded-full">
-              +12% <ArrowUpRight size={12} />
-            </span> */}
           </div>
           <div>
             <p className="text-[var(--text-muted)] font-medium mb-1">סה״כ אימונים</p>
@@ -210,7 +222,6 @@ export default function StatsPage() {
               </h3>
               <p className="text-sm text-[var(--text-secondary)]">התקדמות הציונים ב-20 האימונים האחרונים</p>
             </div>
-            {/* Legend/Controls could go here */}
           </div>
           
           <div className="h-[300px] w-full">

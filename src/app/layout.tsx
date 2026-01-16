@@ -11,10 +11,15 @@ const heebo = Heebo({
 });
 
 export const metadata: Metadata = {
-  title: "NEGO - מאמן משא ומתן מקצועי",
-  description: "כלי מקצועי ללימוד ותרגול משא ומתן. אימון עם AI, ייעוץ אישי, וניתוח טכניקות.",
-  keywords: ["משא ומתן", "אימון", "טכניקות", "negotiation", "training"],
+  title: {
+    default: "NEGO - מאמן משא ומתן מקצועי",
+    template: "%s | NEGO",
+  },
+  description: "כלי מקצועי ללימוד ותרגול משא ומתן. שפר את יכולות המשא ומתן שלך עם אימון AI אינטראקטיבי, ייעוץ אישי בזמן אמת וניתוח טכניקות מתקדם.",
+  keywords: ["משא ומתן", "אימון", "טכניקות", "negotiation", "training", "AI", "לימוד", "עסקים", "משכורת"],
   authors: [{ name: "NEGO" }],
+  creator: "NEGO Team",
+  publisher: "NEGO",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -23,6 +28,39 @@ export const metadata: Metadata = {
   },
   other: {
     "mobile-web-app-capable": "yes",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  openGraph: {
+    type: "website",
+    locale: "he_IL",
+    url: "https://negotiation-trainer-rust.vercel.app",
+    title: "NEGO - מאמן משא ומתן מקצועי",
+    description: "כלי מקצועי ללימוד ותרגול משא ומתן. אימון עם AI וייעוץ אישי.",
+    siteName: "NEGO",
+    images: [
+      {
+        url: "/icons/icon-512.png",
+        width: 512,
+        height: 512,
+        alt: "NEGO Logo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "NEGO - מאמן משא ומתן מקצועי",
+    description: "שפר את יכולות המשא ומתן שלך עם אימון AI אינטראקטיבי.",
+    images: ["/icons/icon-512.png"],
   },
 };
 
@@ -53,9 +91,6 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="format-detection" content="telephone=no" />
-        {/* Preconnect to external services */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* Register service worker */}
         <script
           dangerouslySetInnerHTML={{
@@ -63,8 +98,8 @@ export default function RootLayout({
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
                   navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('SW registered:', reg.scope))
-                    .catch(err => console.log('SW registration failed:', err));
+                    .then(reg => console.log('SW registered'))
+                    .catch(err => console.log('SW failed:', err));
                 });
               }
             `,
