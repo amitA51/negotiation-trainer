@@ -16,9 +16,10 @@ function getAdminApp(): App {
     return adminApp;
   }
   
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
-  const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  // Trim all values to remove any whitespace/newlines that may have been added
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim();
+  const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL?.trim();
+  const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.trim().replace(/\\n/g, '\n');
   
   try {
     if (clientEmail && privateKey) {
