@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Target,
   TrendingUp,
   MessageSquare,
   Award,
   Calendar,
+  BarChart2,
+  Zap,
+  Activity,
+  Trophy,
+  ArrowUpRight,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, Spinner, Skeleton, Progress } from "@/components/ui";
@@ -21,6 +26,9 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  AreaChart,
+  Area,
+  CartesianGrid
 } from "recharts";
 
 export default function StatsPage() {
@@ -45,181 +53,273 @@ export default function StatsPage() {
     loadStats();
   }, [user]);
 
+  // Memoize expensive calculations
+  const chartData = useMemo(() => 
+    stats?.scoresHistory.slice(-20).map((entry, index) => ({
+      name: `${index + 1}`,
+      score: entry.score,
+    })) || [],
+    [stats?.scoresHistory]
+  );
+
+  const topTechniques = useMemo(() => 
+    stats
+      ? Object.entries(stats.techniquesUsed)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([code, count]) => ({
+            technique: techniques.find((t) => t.code === code),
+            count,
+          }))
+      : [],
+    [stats?.techniquesUsed]
+  );
+
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto">
-        <Skeleton className="h-8 w-48 mb-8" />
-        <div className="grid md:grid-cols-3 gap-4 mb-8">
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
+      <div className="max-w-6xl mx-auto p-4 space-y-6">
+        <div className="flex justify-between items-end">
+          <Skeleton className="h-12 w-64" />
+          <Skeleton className="h-8 w-32" />
         </div>
-        <Skeleton className="h-64" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-40 rounded-3xl" />
+          ))}
+        </div>
+        <div className="grid md:grid-cols-3 gap-6">
+          <Skeleton className="h-96 md:col-span-2 rounded-3xl" />
+          <Skeleton className="h-96 rounded-3xl" />
+        </div>
       </div>
     );
   }
 
-  // Prepare chart data
-  const chartData =
-    stats?.scoresHistory.slice(-20).map((entry, index) => ({
-      name: `${index + 1}`,
-      score: entry.score,
-    })) || [];
-
-  // Get top techniques
-  const topTechniques = stats
-    ? Object.entries(stats.techniquesUsed)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([code, count]) => ({
-          technique: techniques.find((t) => t.code === code),
-          count,
-        }))
-    : [];
-
   return (
-    <div className="max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="mb-8 animate-fade-in-up">
-        <h1 className="text-3xl font-bold text-[var(--text-primary)]">סטטיסטיקות</h1>
-        <p className="text-[var(--text-secondary)] mt-2">
-          מעקב אחר ההתקדמות שלך
-        </p>
+    <div className="max-w-6xl mx-auto relative">
+      {/* Decorative Background */}
+      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[var(--accent)]/5 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[var(--accent-dark)]/5 rounded-full blur-[120px]" />
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid md:grid-cols-3 gap-4 mb-8 animate-fade-in-up stagger-1">
-        {/* Total Sessions */}
-        <Card hover={false}>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[var(--info-subtle)] flex items-center justify-center">
-              <Target size={24} className="text-[var(--info)]" />
-            </div>
-            <div>
-              <p className="text-sm text-[var(--text-muted)]">סה״כ אימונים</p>
-              <p className="text-2xl font-bold text-[var(--text-primary)]">
-                {stats?.totalTrainingSessions || 0}
-              </p>
-            </div>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 animate-fade-in-up">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)] flex items-center gap-3">
+            <Activity className="text-[var(--accent)]" />
+            הביצועים שלי
+          </h1>
+          <p className="text-[var(--text-secondary)] mt-2 text-lg">
+            ניתוח מעמיק של התקדמות המשא ומתן שלך
+          </p>
+        </div>
+        
+        {stats && (
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-sm font-medium text-[var(--text-secondary)]">
+            <Calendar size={16} />
+            עודכן לאחרונה: {new Date().toLocaleDateString("he-IL")}
           </div>
-        </Card>
+        )}
+      </div>
+
+      {/* Key Metrics Grid (Bento) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Total Sessions */}
+        <div className="relative overflow-hidden rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-6 group hover:border-[var(--accent-dark)] transition-all duration-300 animate-fade-in-up stagger-1">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--info)]/5 rounded-full blur-2xl -mr-10 -mt-10" />
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 rounded-2xl bg-[var(--info-subtle)] text-[var(--info)]">
+              <Target size={24} />
+            </div>
+            {/* <span className="flex items-center gap-1 text-xs font-medium text-[var(--success)] bg-[var(--success-subtle)] px-2 py-1 rounded-full">
+              +12% <ArrowUpRight size={12} />
+            </span> */}
+          </div>
+          <div>
+            <p className="text-[var(--text-muted)] font-medium mb-1">סה״כ אימונים</p>
+            <h3 className="text-3xl font-bold text-[var(--text-primary)]">
+              {stats?.totalTrainingSessions || 0}
+            </h3>
+          </div>
+        </div>
 
         {/* Average Score */}
-        <Card hover={false}>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[var(--success-subtle)] flex items-center justify-center">
-              <TrendingUp size={24} className="text-[var(--success)]" />
-            </div>
-            <div>
-              <p className="text-sm text-[var(--text-muted)]">ציון ממוצע</p>
-              <p
-                className={cn(
-                  "text-2xl font-bold",
-                  getScoreColor(stats?.avgScore || 0)
-                )}
-              >
-                {stats?.avgScore || 0}
-              </p>
+        <div className="relative overflow-hidden rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-6 group hover:border-[var(--accent-dark)] transition-all duration-300 animate-fade-in-up stagger-2">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--success)]/5 rounded-full blur-2xl -mr-10 -mt-10" />
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 rounded-2xl bg-[var(--success-subtle)] text-[var(--success)]">
+              <Trophy size={24} />
             </div>
           </div>
-        </Card>
+          <div>
+            <p className="text-[var(--text-muted)] font-medium mb-1">ציון ממוצע</p>
+            <h3 className={cn("text-3xl font-bold", getScoreColor(stats?.avgScore || 0))}>
+              {stats?.avgScore || 0}
+            </h3>
+          </div>
+        </div>
 
         {/* Consultations */}
-        <Card hover={false}>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[var(--warning-subtle)] flex items-center justify-center">
-              <MessageSquare size={24} className="text-[var(--warning)]" />
-            </div>
-            <div>
-              <p className="text-sm text-[var(--text-muted)]">ייעוצים</p>
-              <p className="text-2xl font-bold text-[var(--text-primary)]">
-                {stats?.totalConsultations || 0}
-              </p>
+        <div className="relative overflow-hidden rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-6 group hover:border-[var(--accent-dark)] transition-all duration-300 animate-fade-in-up stagger-3">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--warning)]/5 rounded-full blur-2xl -mr-10 -mt-10" />
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 rounded-2xl bg-[var(--warning-subtle)] text-[var(--warning)]">
+              <MessageSquare size={24} />
             </div>
           </div>
-        </Card>
+          <div>
+            <p className="text-[var(--text-muted)] font-medium mb-1">ייעוצים שבוצעו</p>
+            <h3 className="text-3xl font-bold text-[var(--text-primary)]">
+              {stats?.totalConsultations || 0}
+            </h3>
+          </div>
+        </div>
+
+        {/* XP / Level (Placeholder for future feature) */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[var(--accent-dark)]/20 to-[var(--bg-card)] border border-[var(--accent-dark)] p-6 group hover:shadow-[0_0_30px_rgba(var(--accent-rgb),0.1)] transition-all duration-300 animate-fade-in-up stagger-4">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[var(--accent)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 rounded-2xl bg-[var(--accent)] text-black shadow-[0_0_15px_var(--accent-glow)]">
+              <Zap size={24} fill="currentColor" />
+            </div>
+          </div>
+          <div>
+            <p className="text-[var(--accent)] font-medium mb-1">רמה נוכחית</p>
+            <h3 className="text-3xl font-bold text-[var(--text-primary)]">
+              {Math.floor((stats?.totalTrainingSessions || 0) / 5) + 1}
+            </h3>
+            <div className="mt-3 h-1.5 w-full bg-[var(--bg-elevated)] rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-[var(--accent)] shadow-[0_0_10px_var(--accent)]" 
+                style={{ width: `${((stats?.totalTrainingSessions || 0) % 5) * 20}%` }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Score Chart */}
-      {chartData.length > 1 && (
-        <Card className="mb-8 animate-fade-in-up stagger-2" hover={false}>
-          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-6 flex items-center gap-2">
-            <TrendingUp size={20} className="text-[var(--accent)]" />
-            התקדמות הציונים
-          </h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <XAxis
-                  dataKey="name"
-                  stroke="var(--text-muted)"
-                  fontSize={12}
-                />
-                <YAxis
-                  stroke="var(--text-muted)"
-                  fontSize={12}
-                  domain={[0, 100]}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "var(--bg-elevated)",
-                    border: "1px solid var(--border-subtle)",
-                    borderRadius: "var(--radius-md)",
-                    color: "var(--text-primary)",
-                  }}
-                  labelStyle={{ color: "var(--text-secondary)" }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="score"
-                  stroke="var(--accent)"
-                  strokeWidth={2}
-                  dot={{ fill: "var(--accent)", strokeWidth: 0, r: 4 }}
-                  activeDot={{ r: 6, fill: "var(--accent-light)" }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+      <div className="grid md:grid-cols-3 gap-6">
+        {/* Main Chart */}
+        <div className="md:col-span-2 rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-6 animate-fade-in-up stagger-5">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h3 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
+                <TrendingUp size={20} className="text-[var(--accent)]" />
+                מגמת שיפור
+              </h3>
+              <p className="text-sm text-[var(--text-secondary)]">התקדמות הציונים ב-20 האימונים האחרונים</p>
+            </div>
+            {/* Legend/Controls could go here */}
           </div>
-        </Card>
-      )}
+          
+          <div className="h-[300px] w-full">
+            {chartData.length > 1 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-subtle)" opacity={0.5} />
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
+                    dy={10}
+                  />
+                  <YAxis 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: 'var(--text-muted)', fontSize: 12 }}
+                    domain={[0, 100]}
+                  />
+                  <Tooltip
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="bg-[var(--bg-elevated)] border border-[var(--border-subtle)] p-3 rounded-xl shadow-xl backdrop-blur-md">
+                            <p className="text-[var(--text-muted)] text-xs mb-1">אימון מס׳ {label}</p>
+                            <p className="text-[var(--accent)] font-bold text-lg">
+                              ציון: {payload[0].value}
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="score" 
+                    stroke="var(--accent)" 
+                    strokeWidth={3}
+                    fillOpacity={1} 
+                    fill="url(#colorScore)" 
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-[var(--text-muted)]">
+                <BarChart2 size={48} className="mb-4 opacity-20" />
+                <p>אין מספיק נתונים להצגת גרף</p>
+              </div>
+            )}
+          </div>
+        </div>
 
-      {/* Top Techniques */}
-      {topTechniques.length > 0 && (
-        <Card className="animate-fade-in-up stagger-3" hover={false}>
-          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-6 flex items-center gap-2">
+        {/* Top Techniques */}
+        <div className="rounded-3xl bg-[var(--bg-card)] border border-[var(--border-subtle)] p-6 animate-fade-in-up stagger-6">
+          <h3 className="text-xl font-bold text-[var(--text-primary)] mb-6 flex items-center gap-2">
             <Award size={20} className="text-[var(--accent)]" />
-            טכניקות מובילות
+            ארגז הכלים שלי
           </h3>
-          <div className="space-y-4">
-            {topTechniques.map(({ technique, count }, index) => {
-              if (!technique) return null;
-              const maxCount = topTechniques[0].count;
-              const percentage = (count / maxCount) * 100;
+          
+          {topTechniques.length > 0 ? (
+            <div className="space-y-6">
+              {topTechniques.map(({ technique, count }, index) => {
+                if (!technique) return null;
+                const maxCount = topTechniques[0].count;
+                const percentage = (count / maxCount) * 100;
 
-              return (
-                <div key={technique.code}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[var(--text-primary)]">{technique.name}</span>
-                    <span className="text-sm text-[var(--text-muted)]">{count} פעמים</span>
+                return (
+                  <div key={technique.code} className="group">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">
+                        {technique.name}
+                      </span>
+                      <span className="text-xs font-mono text-[var(--text-muted)] bg-[var(--bg-elevated)] px-2 py-0.5 rounded-md">
+                        {count} שימושים
+                      </span>
+                    </div>
+                    <div className="h-2 w-full bg-[var(--bg-elevated)] rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-[var(--accent-dark)] to-[var(--accent)] rounded-full transition-all duration-1000 ease-out"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
                   </div>
-                  <Progress value={percentage} showLabel={false} />
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      )}
-
+                );
+              })}
+            </div>
+          ) : (
+            <div className="h-[200px] flex flex-col items-center justify-center text-[var(--text-muted)] text-center">
+              <p>עדיין לא השתמשת בטכניקות</p>
+              <p className="text-sm mt-2">השתמש בטכניקות במהלך אימון כדי לראות אותן כאן</p>
+            </div>
+          )}
+        </div>
+      </div>
+      
       {!stats || (stats.totalTrainingSessions === 0 && stats.totalConsultations === 0) ? (
-        <Card className="text-center py-12" hover={false}>
-          <Target size={48} className="mx-auto text-[var(--text-muted)] mb-4" />
-          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
-            אין נתונים עדיין
-          </h3>
-          <p className="text-[var(--text-secondary)]">
-            התחל אימונים כדי לראות את הסטטיסטיקות שלך
+        <div className="mt-8 text-center animate-fade-in-up stagger-7">
+          <p className="text-[var(--text-muted)]">
+            טיפ: ככל שתתאמן יותר, כך הגרפים יהיו מדויקים יותר ויעזרו לך להשתפר.
           </p>
-        </Card>
+        </div>
       ) : null}
     </div>
   );
