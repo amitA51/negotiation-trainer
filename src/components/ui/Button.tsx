@@ -23,6 +23,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       icon,
       iconPosition = "start",
       children,
+      "aria-label": ariaLabel,
       ...props
     },
     ref
@@ -34,8 +35,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         shadow-[0_0_0_1px_var(--accent-dark),var(--shadow-sm)]
         hover:from-[var(--accent-light)] hover:to-[var(--accent)]
         hover:shadow-[0_0_20px_var(--accent-glow),var(--shadow-md)]
-        hover:-translate-y-0.5
-        active:translate-y-0
+        active:scale-[0.98]
       `,
       secondary: `
         bg-[var(--bg-elevated)]
@@ -64,18 +64,31 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       lg: "px-7 py-3.5 text-lg gap-2.5",
     };
 
+    // Icon-only buttons need aria-label
+    const isIconOnly = icon && !children;
+    const computedAriaLabel = isIconOnly && !ariaLabel ? "לחצן" : ariaLabel;
+
     return (
       <button
         ref={ref}
         disabled={disabled || loading}
+        aria-label={computedAriaLabel}
+        aria-busy={loading}
+        aria-disabled={disabled || loading}
         className={cn(
           // Base styles
           "inline-flex items-center justify-center",
           "rounded-[var(--radius-md)]",
           "font-medium",
-          "transition-all duration-[var(--transition-fast)]",
+          // Use specific transition properties instead of transition-all
+          "transition-[background,border-color,box-shadow,transform,opacity]",
+          "duration-[var(--transition-fast)]",
+          // Focus - using focus-visible for better UX
           "outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)]",
+          // Disabled state
           "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none",
+          // Touch optimization
+          "touch-action-manipulation",
           // Variant
           variants[variant],
           // Size
@@ -85,13 +98,13 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {loading ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
         ) : (
-          icon && iconPosition === "start" && <span className="shrink-0">{icon}</span>
+          icon && iconPosition === "start" && <span className="shrink-0" aria-hidden="true">{icon}</span>
         )}
         {children}
         {!loading && icon && iconPosition === "end" && (
-          <span className="shrink-0">{icon}</span>
+          <span className="shrink-0" aria-hidden="true">{icon}</span>
         )}
       </button>
     );

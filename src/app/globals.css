@@ -933,3 +933,377 @@ h5 { font-size: 1rem; line-height: 1.5; }
 .focus-ring:focus {
   animation: focusRing 0.3s ease-out;
 }
+
+/* ============================================
+   ADDITIONAL ANIMATIONS & EFFECTS
+   ============================================ */
+
+/* === Shake Animation === */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* === Bounce Animation === */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-bounce-custom {
+  animation: bounce 1s ease-in-out infinite;
+}
+
+/* === Rotate Animation === */
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-rotate {
+  animation: rotate 2s linear infinite;
+}
+
+/* === Scale Pulse === */
+@keyframes scalePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.animate-scale-pulse {
+  animation: scalePulse 2s ease-in-out infinite;
+}
+
+/* === Slide In Bottom === */
+@keyframes slideInBottom {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-in-bottom {
+  animation: slideInBottom 0.4s ease-out forwards;
+}
+
+/* === Confetti Effect === */
+@keyframes confetti {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+}
+
+.confetti-particle {
+  animation: confetti 3s ease-out forwards;
+}
+
+/* === Gradient Flow === */
+@keyframes gradientFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animated-gradient-text {
+  background: linear-gradient(
+    90deg,
+    var(--accent-light),
+    var(--accent),
+    var(--accent-dark),
+    var(--accent)
+  );
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientFlow 4s ease infinite;
+}
+
+/* === Ripple Click Effect === */
+@keyframes rippleEffect {
+  0% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.ripple-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple-effect::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100px;
+  height: 100px;
+  margin: -50px 0 0 -50px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: scale(0);
+  opacity: 0;
+}
+
+.ripple-effect:active::before {
+  animation: rippleEffect 0.6s ease-out;
+}
+
+/* === Text Highlight === */
+.text-highlight {
+  position: relative;
+  display: inline;
+}
+
+.text-highlight::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 30%;
+  background: var(--accent-subtle);
+  z-index: -1;
+  transform: skewX(-10deg);
+}
+
+/* === Underline Hover Effect === */
+.hover-underline {
+  position: relative;
+}
+
+.hover-underline::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--accent);
+  transition: width var(--transition-base);
+}
+
+.hover-underline:hover::after {
+  width: 100%;
+}
+
+/* === Card Flip === */
+.flip-card {
+  perspective: 1000px;
+}
+
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+
+.flip-card:hover .flip-card-inner {
+  transform: rotateY(180deg);
+}
+
+.flip-card-front, .flip-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+}
+
+.flip-card-back {
+  transform: rotateY(180deg);
+}
+
+/* === Light Theme Support === */
+html.light {
+  --bg-primary: #FAFAFA;
+  --bg-secondary: #F0F0F2;
+  --bg-elevated: #FFFFFF;
+  --bg-hover: #E8E8EC;
+  --bg-active: #E0E0E4;
+  
+  --border-subtle: #E5E5EA;
+  --border-default: #D1D1D6;
+  --border-strong: #C7C7CC;
+  
+  --text-primary: #1C1C1E;
+  --text-secondary: #636366;
+  --text-muted: #8E8E93;
+  --text-disabled: #AEAEB2;
+  
+  --accent: #C9A227;
+  --accent-light: #D4A853;
+  --accent-dark: #9A7B1C;
+  --accent-subtle: rgba(201, 162, 39, 0.15);
+  --accent-glow: rgba(201, 162, 39, 0.3);
+  
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.16);
+}
+
+html.light body::before {
+  opacity: 0.02;
+}
+
+/* === Print Styles === */
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .card {
+    border: 1px solid #ccc;
+    box-shadow: none;
+  }
+}
+
+/* === Reduced Motion === */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* === Mobile Specific === */
+@media (max-width: 768px) {
+  html {
+    font-size: 15px;
+  }
+  
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.25rem; }
+  
+  .mobile-full {
+    width: 100% !important;
+    border-radius: 0 !important;
+  }
+  
+  /* Improve touch targets */
+  button, 
+  a,
+  input,
+  select {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Safe area for notched devices */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* === Tablet Specific === */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .tablet-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* === Desktop Specific === */
+@media (min-width: 1025px) {
+  .desktop-sidebar {
+    padding-right: 16rem;
+  }
+}
+
+/* === High Contrast Mode === */
+@media (prefers-contrast: high) {
+  :root {
+    --border-subtle: #555;
+    --border-default: #777;
+    --border-strong: #999;
+  }
+  
+  .card {
+    border-width: 2px;
+  }
+  
+  button {
+    border: 2px solid currentColor;
+  }
+}
+
+/* === Focus Visible Improvements === */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Skip to content link for accessibility */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--accent);
+  color: black;
+  padding: 8px 16px;
+  z-index: 10000;
+  transition: top var(--transition-fast);
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* === Scrollbar for RTL === */
+html[dir="rtl"] ::-webkit-scrollbar {
+  direction: ltr;
+}
+
+/* === Custom Selection Color === */
+::selection {
+  background: var(--accent-subtle);
+  color: var(--accent-light);
+}
+
+::-moz-selection {
+  background: var(--accent-subtle);
+  color: var(--accent-light);
+}
+
+/* === Placeholder Styling === */
+::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+/* === Autofill Styling === */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text-primary);
+  -webkit-box-shadow: 0 0 0px 1000px var(--bg-secondary) inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
