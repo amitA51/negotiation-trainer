@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase/config';
-import { collection, query, where, getDocs, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { getAdminDb } from '@/lib/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
 const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
@@ -50,24 +50,23 @@ async function sendTelegramMessage(chatId: number, text: string, parseMode: 'HTM
 }
 
 async function handlePairingCode(chatId: number, telegramUserId: number, code: string, userName: string) {
+  const db = getAdminDb();
+  
   // Find pairing request with this code
-  const pairingRef = collection(db, 'pairingCodes');
-  const q = query(
-    pairingRef,
-    where('code', '==', code.toUpperCase()),
-    where('used', '==', false)
-  );
+  const pairingQuery = await db.collection('pairingCodes')
+    .where('code', '==', code.toUpperCase())
+    .where('used', '==', false)
+    .limit(1)
+    .get();
   
-  const snapshot = await getDocs(q);
-  
-  if (snapshot.empty) {
+  if (pairingQuery.empty) {
     await sendTelegramMessage(chatId, 
       '❌ <b>קוד לא תקין או פג תוקף</b>\n\nנסה שוב או צור קוד חדש באפליקציה.'
     );
     return;
   }
   
-  const pairingDoc = snapshot.docs[0];
+  const pairingDoc = pairingQuery.docs[0];
   const pairingData = pairingDoc.data();
   
   // Check if code is expired (15 minutes)
@@ -80,18 +79,17 @@ async function handlePairingCode(chatId: number, telegramUserId: number, code: s
   }
   
   // Update user with Telegram info
-  const userRef = doc(db, 'users', pairingData.userId);
-  await updateDoc(userRef, {
+  await db.collection('users').doc(pairingData.userId).update({
     telegramChatId: chatId,
     telegramUserId: telegramUserId,
     telegramUsername: userName,
-    telegramLinkedAt: serverTimestamp(),
+    telegramLinkedAt: FieldValue.serverTimestamp(),
   });
   
   // Mark code as used
-  await updateDoc(doc(db, 'pairingCodes', pairingDoc.id), {
+  await pairingDoc.ref.update({
     used: true,
-    usedAt: serverTimestamp(),
+    usedAt: FieldValue.serverTimestamp(),
   });
   
   await sendTelegramMessage(chatId,
@@ -184,12 +182,15 @@ async function handleCommand(message: TelegramMessage) {
 }
 
 async function startConsultation(chatId: number, telegramUserId: number) {
-  // Find linked user
-  const usersRef = collection(db, 'users');
-  const q = query(usersRef, where('telegramUserId', '==', telegramUserId));
-  const snapshot = await getDocs(q);
+  const db = getAdminDb();
   
-  if (snapshot.empty) {
+  // Find linked user
+  const userQuery = await db.collection('users')
+    .where('telegramUserId', '==', telegramUserId)
+    .limit(1)
+    .get();
+  
+  if (userQuery.empty) {
     await sendTelegramMessage(chatId,
       '⚠️ <b>החשבון לא מצומד</b>\n\n' +
       'כדי להשתמש בתכונה זו, קודם צמד את החשבון שלך.\n' +
@@ -198,22 +199,23 @@ async function startConsultation(chatId: number, telegramUserId: number) {
     return;
   }
   
-  const userId = snapshot.docs[0].id;
+  const userDoc = userQuery.docs[0];
   
   // Create new consultation session
-  const consultationRef = await addDoc(collection(db, 'users', userId, 'consultations'), {
-    createdAt: serverTimestamp(),
-    status: 'active',
-    source: 'telegram',
-    telegramChatId: chatId,
-  });
+  const consultationRef = await db.collection('users').doc(userDoc.id)
+    .collection('consultations').add({
+      createdAt: FieldValue.serverTimestamp(),
+      status: 'active',
+      source: 'telegram',
+      telegramChatId: chatId,
+    });
   
   // Save active session
-  await updateDoc(doc(db, 'users', userId), {
+  await userDoc.ref.update({
     activeTelegramSession: {
       type: 'consultation',
       sessionId: consultationRef.id,
-      startedAt: serverTimestamp(),
+      startedAt: FieldValue.serverTimestamp(),
     }
   });
   
@@ -229,16 +231,19 @@ async function startConsultation(chatId: number, telegramUserId: number) {
 }
 
 async function sendUserStats(chatId: number, telegramUserId: number) {
-  const usersRef = collection(db, 'users');
-  const q = query(usersRef, where('telegramUserId', '==', telegramUserId));
-  const snapshot = await getDocs(q);
+  const db = getAdminDb();
   
-  if (snapshot.empty) {
+  const userQuery = await db.collection('users')
+    .where('telegramUserId', '==', telegramUserId)
+    .limit(1)
+    .get();
+  
+  if (userQuery.empty) {
     await sendTelegramMessage(chatId, '⚠️ החשבון לא מצומד. שלח /start לצימוד.');
     return;
   }
   
-  const userData = snapshot.docs[0].data();
+  const userData = userQuery.docs[0].data();
   const stats = userData.stats || {};
   
   await sendTelegramMessage(chatId,
@@ -252,16 +257,19 @@ async function sendUserStats(chatId: number, telegramUserId: number) {
 }
 
 async function endActiveSession(chatId: number, telegramUserId: number) {
-  const usersRef = collection(db, 'users');
-  const q = query(usersRef, where('telegramUserId', '==', telegramUserId));
-  const snapshot = await getDocs(q);
+  const db = getAdminDb();
   
-  if (snapshot.empty) {
+  const userQuery = await db.collection('users')
+    .where('telegramUserId', '==', telegramUserId)
+    .limit(1)
+    .get();
+  
+  if (userQuery.empty) {
     await sendTelegramMessage(chatId, 'אין שיחה פעילה.');
     return;
   }
   
-  const userDoc = snapshot.docs[0];
+  const userDoc = userQuery.docs[0];
   const userData = userDoc.data();
   
   if (!userData.activeTelegramSession) {
@@ -269,7 +277,7 @@ async function endActiveSession(chatId: number, telegramUserId: number) {
     return;
   }
   
-  await updateDoc(doc(db, 'users', userDoc.id), {
+  await userDoc.ref.update({
     activeTelegramSession: null,
   });
   
@@ -280,16 +288,18 @@ async function endActiveSession(chatId: number, telegramUserId: number) {
 }
 
 async function handleConversation(message: TelegramMessage) {
+  const db = getAdminDb();
   const chatId = message.chat.id;
   const telegramUserId = message.from.id;
   const userMessage = message.text || '';
   
   // Find linked user with active session
-  const usersRef = collection(db, 'users');
-  const q = query(usersRef, where('telegramUserId', '==', telegramUserId));
-  const snapshot = await getDocs(q);
+  const userQuery = await db.collection('users')
+    .where('telegramUserId', '==', telegramUserId)
+    .limit(1)
+    .get();
   
-  if (snapshot.empty) {
+  if (userQuery.empty) {
     // Not linked - check if message looks like a pairing code
     if (message.text && /^[A-Z0-9]{6}$/i.test(message.text.trim())) {
       await handlePairingCode(chatId, telegramUserId, message.text.trim(), message.from.username || message.from.first_name);
@@ -302,7 +312,7 @@ async function handleConversation(message: TelegramMessage) {
     return;
   }
   
-  const userDoc = snapshot.docs[0];
+  const userDoc = userQuery.docs[0];
   const userData = userDoc.data();
   
   if (!userData.activeTelegramSession) {
@@ -342,7 +352,7 @@ async function handleConversation(message: TelegramMessage) {
         { role: 'ai', content: data.message },
       ].slice(-20); // Keep last 20 messages
       
-      await updateDoc(doc(db, 'users', userDoc.id), {
+      await userDoc.ref.update({
         telegramChatHistory: newHistory,
       });
       
@@ -382,7 +392,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Verification endpoint for setting up webhook
-export async function GET(request: NextRequest) {
+export async function GET() {
   return NextResponse.json({
     status: 'Telegram webhook endpoint active',
     bot: 'NEGO - מאמן משא ומתן',

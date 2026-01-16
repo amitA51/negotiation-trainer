@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase/config';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getAdminDb } from '@/lib/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
 const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
@@ -29,15 +29,17 @@ export async function POST(request: NextRequest) {
     
     if (action === 'generate') {
       try {
-        // Generate new code (skip cleanup for now to avoid index issues)
+        const db = getAdminDb();
+        
+        // Generate new code
         const code = generatePairingCode();
         console.log('[Pairing API] Generated code:', code);
         
-        await addDoc(collection(db, 'pairingCodes'), {
+        await db.collection('pairingCodes').add({
           code,
           userId,
           used: false,
-          createdAt: serverTimestamp(),
+          createdAt: FieldValue.serverTimestamp(),
           expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
         });
         console.log('[Pairing API] Code saved to Firestore');
