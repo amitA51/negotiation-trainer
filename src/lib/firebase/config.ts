@@ -14,6 +14,15 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
+// Debug config availability
+if (typeof window !== "undefined") {
+  if (!firebaseConfig.apiKey) {
+    console.error("Firebase config is missing! Check your environment variables.");
+  } else {
+    console.log("Firebase config loaded for project:", firebaseConfig.projectId);
+  }
+}
+
 // Initialize Firebase
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 

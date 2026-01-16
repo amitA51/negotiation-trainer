@@ -28,8 +28,22 @@ export default function LoginPage() {
       await signInWithGoogle();
       router.push("/dashboard");
     } catch (err: any) {
-      console.error(err);
-      setError("שגיאה בהתחברות עם Google. נסה שוב.");
+      console.error("Google Sign In Error:", err);
+      // Show more detailed error for debugging
+      const errorMessage = err.message || "שגיאה לא ידועה";
+      const errorCode = err.code || "unknown";
+      
+      if (errorCode === "auth/popup-closed-by-user") {
+        setError("החלון נסגר לפני סיום ההתחברות");
+      } else if (errorCode === "auth/cancelled-popup-request") {
+        // Ignore this error as it happens when multiple popups are triggered
+      } else if (errorCode === "auth/popup-blocked") {
+        setError("הדפדפן חסם את החלון הקופץ. אנא אופשר חלונות קופצים לאתר זה.");
+      } else if (errorCode === "auth/unauthorized-domain") {
+         setError(`הדומיין אינו מורשה ב-Firebase (${window.location.hostname})`);
+      } else {
+         setError(`שגיאה בהתחברות עם Google: ${errorMessage} (${errorCode})`);
+      }
     } finally {
       setLoading(false);
     }
