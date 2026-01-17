@@ -20,30 +20,7 @@ import { BentoGrid, BentoGridItem } from "@/components/ui/BentoGrid";
 import { TextReveal } from "@/components/ui/TextReveal";
 import { MagneticButton } from "@/components/ui/MagneticButton";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
-
-// Daily tips array
-const DAILY_TIPS = [
-  {
-    title: "שיקוף (Mirroring)",
-    content: "חזור על 1–3 המילים האחרונות של הצד השני כשאלה. זה גורם לאנשים להרגיש שמקשיבים להם ולהמשיך לדבר.",
-  },
-  {
-    title: "עיגון (Anchoring)",
-    content: "הצע מספר ראשון קיצוני כנקודת התחלה. זה ישפיע על כל המשא ומתן שיבוא אחריו.",
-  },
-  {
-    title: "שתיקה אסטרטגית",
-    content: "אחרי שהצעת הצעה, שתוק. רוב האנשים לא יכולים לשאת שקט ויתחילו להציע ויתורים.",
-  },
-  {
-    title: "BATNA",
-    content: "תמיד דע מה האלטרנטיבה הטובה ביותר שלך. זה נותן לך כוח לסרב להצעות גרועות.",
-  },
-  {
-    title: "בקש יותר",
-    content: "תמיד בקש יותר ממה שאתה באמת רוצה. זה נותן לך מרווח למשא ומתן.",
-  },
-];
+import { DAILY_TIPS_DETAILED } from "@/data/tips";
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -52,7 +29,7 @@ export default function DashboardPage() {
   // Get daily tip based on day of year
   const dailyTip = useMemo(() => {
     const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
-    return DAILY_TIPS[dayOfYear % DAILY_TIPS.length];
+    return DAILY_TIPS_DETAILED[dayOfYear % DAILY_TIPS_DETAILED.length];
   }, []);
 
   // Get greeting based on time of day

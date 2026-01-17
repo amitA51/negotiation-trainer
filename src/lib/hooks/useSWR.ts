@@ -1,6 +1,6 @@
 "use client";
 
-import useSWR from "swr";
+import useSWR, { type SWRConfiguration } from "swr";
 import {
   getUserStats,
   getUserSessions,
@@ -13,11 +13,26 @@ import {
 } from "@/lib/firebase/firestore";
 import type { UserStats, Session, Message, Consultation, SessionAnalysis } from "@/types";
 
-// Default SWR configuration
-const defaultConfig = {
+// Default SWR configuration with error handling
+const defaultConfig: SWRConfiguration = {
   revalidateOnFocus: false,
   revalidateOnReconnect: true,
-  dedupingInterval: 5000, // 5 seconds
+  dedupingInterval: 5000,
+  errorRetryCount: 3,
+  onError: (error) => {
+    console.error("SWR Error:", error);
+  },
+};
+
+// Fallback data for better UX
+const emptyStats: UserStats = {
+  totalTrainingSessions: 0,
+  totalConsultations: 0,
+  avgScore: 0,
+  techniquesUsed: {},
+  scoresHistory: [],
+  strongTechniques: [],
+  weakTechniques: [],
 };
 
 /**
@@ -31,6 +46,7 @@ export function useUserStats(userId: string | undefined) {
       ...defaultConfig,
       revalidateIfStale: true,
       refreshInterval: 60000, // Refresh every minute
+      fallbackData: emptyStats as UserStats | null, // Provide fallback data while loading
     }
   );
 }
@@ -38,13 +54,15 @@ export function useUserStats(userId: string | undefined) {
 /**
  * Hook to fetch user sessions (history) with SWR caching
  */
-export function useUserSessions(userId: string | undefined, limitCount: number = 50) {
+export function useUserSessions(userId: string | undefined, limitCount: number = 20) {
   return useSWR<Session[]>(
     userId ? ["userSessions", userId, limitCount] : null,
     () => getUserSessions(userId!, limitCount),
     {
       ...defaultConfig,
       revalidateIfStale: true,
+      refreshInterval: 30000, // Refresh every 30 seconds
+      fallbackData: [], // Empty array fallback
     }
   );
 }
@@ -60,6 +78,7 @@ export function useActiveSession(userId: string | undefined) {
       ...defaultConfig,
       revalidateIfStale: true,
       refreshInterval: 30000, // Refresh every 30 seconds
+      fallbackData: null,
     }
   );
 }
@@ -74,6 +93,7 @@ export function useSession(sessionId: string | undefined) {
     {
       ...defaultConfig,
       revalidateIfStale: false, // Session data rarely changes
+      fallbackData: null,
     }
   );
 }
@@ -89,6 +109,7 @@ export function useMessages(sessionId: string | undefined) {
       ...defaultConfig,
       revalidateIfStale: true,
       refreshInterval: 5000, // Refresh every 5 seconds during active chat
+      fallbackData: [],
     }
   );
 }
@@ -103,6 +124,7 @@ export function useConsultation(consultationId: string | undefined) {
     {
       ...defaultConfig,
       revalidateIfStale: false, // Consultation data rarely changes
+      fallbackData: null,
     }
   );
 }
@@ -118,6 +140,7 @@ export function useConsultationMessages(consultationId: string | undefined) {
       ...defaultConfig,
       revalidateIfStale: true,
       refreshInterval: 5000, // Refresh every 5 seconds during active chat
+      fallbackData: [],
     }
   );
 }
@@ -132,12 +155,14 @@ export function useSessionAnalysis(sessionId: string | undefined) {
     {
       ...defaultConfig,
       revalidateIfStale: false, // Analysis doesn't change once created
+      fallbackData: null,
     }
   );
 }
 
 /**
  * Hook for dashboard data (stats + active session combined)
+ * Optimized to prevent unnecessary re-renders
  */
 export function useDashboardData(userId: string | undefined) {
   const stats = useUserStats(userId);
@@ -150,5 +175,6 @@ export function useDashboardData(userId: string | undefined) {
     error: stats.error || activeSession.error,
     mutateStats: stats.mutate,
     mutateActiveSession: activeSession.mutate,
+    isValidating: stats.isValidating || activeSession.isValidating,
   };
 }

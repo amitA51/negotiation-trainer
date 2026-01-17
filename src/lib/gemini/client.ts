@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export const geminiModel = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash",
+  model: "gemini-2.5-flash",
 });
 
 export const geminiModelPro = genAI.getGenerativeModel({
@@ -46,14 +46,14 @@ export async function generateJSON<T>(prompt: string, usePro: boolean = false): 
   const fullPrompt = `${prompt}
 
 חשוב מאוד: החזר תשובה בפורמט JSON בלבד, בלי טקסט נוסף לפני או אחרי.`;
-  
+
   const text = await generateContent(fullPrompt, usePro);
-  
+
   // Try to extract JSON from the response
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
     throw new Error("No JSON found in response");
   }
-  
+
   return JSON.parse(jsonMatch[0]) as T;
 }

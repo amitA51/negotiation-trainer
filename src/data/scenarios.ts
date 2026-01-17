@@ -187,3 +187,6 @@ export const scenarioCategories = [
     color: "purple",
   },
 ];
+
+export const RECENT_SCENARIOS_LIMIT = 5;
+export const MAX_RECENT_SCENARIOS = 5;

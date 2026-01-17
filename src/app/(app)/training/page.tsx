@@ -18,8 +18,9 @@ import {
 } from "lucide-react";
 import { Button, Badge, Textarea } from "@/components/ui";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/components/ui/Toast";
 import { createSession } from "@/lib/firebase/firestore";
-import { scenarioTemplates, scenarioCategories, getScenariosByCategory } from "@/data/scenarios";
+import { scenarioTemplates, scenarioCategories, getScenariosByCategory, RECENT_SCENARIOS_LIMIT } from "@/data/scenarios";
 import { cn, getDifficultyInfo } from "@/lib/utils";
 import type { ScenarioCategory } from "@/types";
 
@@ -44,12 +45,14 @@ const difficultyIcons = [
 export default function TrainingPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [step, setStep] = useState<"category" | "scenario" | "difficulty" | "custom">("category");
   const [selectedCategory, setSelectedCategory] = useState<ScenarioCategory | null>(null);
   const [selectedScenario, setSelectedScenario] = useState<typeof scenarioTemplates[0] | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<number>(3);
   const [customScenario, setCustomScenario] = useState("");
   const [loading, setLoading] = useState(false);
+  const [recentScenarios, setRecentScenarios] = useState<string[]>([]);
 
   const stepNumber = useMemo(() => {
     if (step === "category") return 1;
@@ -116,9 +119,16 @@ export default function TrainingPage() {
         source: "web",
       });
 
+      // Track recent scenarios (add to front, limit size)
+      setRecentScenarios(prev => {
+        const updated = [selectedScenario?.id || "custom", ...prev.filter(id => id !== (selectedScenario?.id || "custom"))];
+        return updated.slice(0, RECENT_SCENARIOS_LIMIT);
+      });
+
       router.push(`/training/${sessionId}`);
     } catch (error) {
       console.error("Error creating session:", error);
+      showToast("שגיאה ביצירת האימון. נסה שוב.", "error");
     } finally {
       setLoading(false);
     }
@@ -200,6 +210,28 @@ export default function TrainingPage() {
       {/* Step: Category Selection */}
       {step === "category" && (
         <div className="space-y-4 slide-up">
+          {/* Recent Scenarios */}
+          {recentScenarios.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-[var(--text-muted)] mb-3">תרחישים שהשתמשת לאחרונה</h3>
+              <div className="flex flex-wrap gap-2">
+                {recentScenarios.map((scenarioId) => {
+                  const scenario = scenarioTemplates.find(s => s.id === scenarioId);
+                  if (!scenario) return null;
+                  return (
+                    <button
+                      key={scenarioId}
+                      onClick={() => handleScenarioSelect(scenario)}
+                      className="px-3 py-2 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent)] transition-colors"
+                    >
+                      {scenario.title}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="grid md:grid-cols-2 gap-4">
             {scenarioCategories.map((category, index) => (
               <button

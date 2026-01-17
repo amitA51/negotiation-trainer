@@ -12,12 +12,14 @@ import {
   Zap,
   Activity,
   Trophy,
+  Lightbulb,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Skeleton } from "@/components/ui";
+import { Skeleton, SkeletonStats, SkeletonCard } from "@/components/ui";
 import { useUserStats } from "@/lib/hooks/useSWR";
 import { techniques } from "@/data/techniques";
 import { cn, getScoreColor } from "@/lib/utils";
+import Link from "next/link";
 
 // Dynamically import Recharts to reduce initial bundle size
 const ResponsiveContainer = dynamic(
@@ -71,18 +73,88 @@ export default function StatsPage() {
     [stats?.techniquesUsed]
   );
 
+  const hasData = stats && (stats.totalTrainingSessions > 0 || stats.totalConsultations > 0);
+
   if (loading) {
     return (
       <div className="max-w-5xl mx-auto space-y-6">
         <Skeleton className="h-12 w-64" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-32 rounded-2xl" />
-          ))}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Skeleton className="h-28 rounded-2xl" />
+          <Skeleton className="h-28 rounded-2xl" />
+          <Skeleton className="h-28 rounded-2xl" />
+          <Skeleton className="h-28 rounded-2xl" />
         </div>
         <div className="grid md:grid-cols-3 gap-5">
-          <Skeleton className="h-80 md:col-span-2 rounded-2xl" />
-          <Skeleton className="h-80 rounded-2xl" />
+          <div className="md:col-span-2 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] p-6">
+            <Skeleton className="h-6 w-40 mb-6" />
+            <Skeleton className="h-[260px] w-full rounded-xl" />
+          </div>
+          <div className="rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] p-6">
+            <Skeleton className="h-6 w-32 mb-5" />
+            <div className="space-y-4">
+              <Skeleton className="h-12 w-full rounded-lg" />
+              <Skeleton className="h-12 w-full rounded-lg" />
+              <Skeleton className="h-12 w-full rounded-lg" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Empty state for new users
+  if (!hasData) {
+    return (
+      <div className="max-w-5xl mx-auto">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 fade-in">
+          <div>
+            <h1 className="text-3xl font-bold text-[var(--text-primary)] flex items-center gap-3">
+              <Activity className="text-[var(--accent)]" size={28} />
+              הביצועים שלי
+            </h1>
+            <p className="text-[var(--text-secondary)] mt-2">
+              ניתוח התקדמות המשא ומתן שלך
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] p-8 text-center max-w-2xl mx-auto">
+          <div className="w-20 h-20 rounded-full bg-[var(--accent-subtle)] flex items-center justify-center mx-auto mb-6">
+            <Activity size={40} className="text-[var(--accent)]" />
+          </div>
+          <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-3">
+            עדיין אין לך נתונים
+          </h2>
+          <p className="text-[var(--text-secondary)] text-lg mb-6 max-w-md mx-auto">
+            התחל להתאמן כדי לראות את הביצועים שלך, גרפי התקדמות וסטטיסטיקות מפורטות
+          </p>
+          <Link href="/training">
+            <button className="px-6 py-3 bg-[var(--accent)] text-black font-semibold rounded-xl hover:bg-[var(--accent-light)] transition-colors">
+              התחל אימון ראשון
+            </button>
+          </Link>
+        </div>
+
+        <div className="mt-8 p-6 rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
+          <h3 className="font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
+            <Lightbulb size={18} className="text-[var(--accent)]" />
+            טיפים לשיפור
+          </h3>
+          <ul className="space-y-3 text-[var(--text-secondary)]">
+            <li className="flex items-start gap-2">
+              <span className="text-[var(--accent)] mt-1">•</span>
+              השתמש בטכניקות שונות במהלך האימונים כדי להעשיר את הניתוח
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[var(--accent)] mt-1">•</span>
+              נסה רמות קושי שונות כדי לאתגר את עצמך
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-[var(--accent)] mt-1">•</span>
+              קרא על הטכניקות בדף הטכניקות לפני כל אימון
+            </li>
+          </ul>
         </div>
       </div>
     );

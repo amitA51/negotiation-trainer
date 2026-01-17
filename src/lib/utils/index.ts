@@ -27,16 +27,16 @@ export function formatRelativeTime(date: Date | string | number): string {
   const d = new Date(date);
   const now = new Date();
   const diff = now.getTime() - d.getTime();
-  
+
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
-  
+
   if (minutes < 1) return "עכשיו";
   if (minutes < 60) return `לפני ${minutes} דקות`;
   if (hours < 24) return `לפני ${hours} שעות`;
   if (days < 7) return `לפני ${days} ימים`;
-  
+
   return formatDate(d);
 }
 
@@ -82,7 +82,7 @@ export function getDifficultyInfo(level: number): {
     7: { name: "אלוף", color: "text-red-400", description: "כמעט בלתי אפשרי - משתמש בכל הטריקים" },
     8: { name: "אגדה", color: "text-red-400", description: "בלתי אפשרי כמעט - יריב מושלם" },
   };
-  
+
   return levels[level] || levels[1];
 }
 
@@ -120,7 +120,7 @@ export function getCategoryInfo(category: string): {
 import type { User, AIModel } from "@/types";
 
 export function getPreferredModel(user: User | null | undefined): AIModel {
-  return user?.settings?.preferredModel || "gemini-1.5-flash";
+  return user?.settings?.preferredModel || "gemini-2.5-flash";
 }
 
 /**
@@ -131,6 +131,7 @@ export function getAIModelName(model: AIModel): string {
     "gemini-1.5-flash": "Gemini 1.5 Flash",
     "gemini-1.5-pro": "Gemini 1.5 Pro",
     "gemini-2.0-flash-exp": "Gemini 2.0 Flash",
+    "gemini-2.5-flash": "Gemini 2.5 Flash (New)",
   };
   return names[model];
 }

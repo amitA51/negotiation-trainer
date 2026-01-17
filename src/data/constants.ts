@@ -4,9 +4,10 @@ export const AI_MODELS: { id: AIModel; name: string; description: string }[] = [
   { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash", description: "מהיר ויעיל - מומלץ לרוב המשתמשים" },
   { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro", description: "איכות גבוהה יותר, זמן תגובה ארוך יותר" },
   { id: "gemini-2.0-flash-exp", name: "Gemini 2.0 Flash", description: "הגרסה החדשה ביותר (ניסיוני)" },
+  { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", description: "המודל המעודכן ביותר והמהיר ביותר" },
 ];
 
-export const DEFAULT_AI_MODEL: AIModel = "gemini-1.5-flash";
+export const DEFAULT_AI_MODEL: AIModel = "gemini-2.5-flash";
 export const DEFAULT_ANALYSIS_MODEL: AIModel = "gemini-1.5-pro";
 
 export const API_TIMEOUT_MS = 30000;

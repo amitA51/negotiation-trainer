@@ -12,7 +12,7 @@ if (!GEMINI_API_KEY) {
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 // Get model by name
-function getModel(modelName: AIModel = "gemini-1.5-flash") {
+function getModel(modelName: AIModel = "gemini-2.5-flash") {
   return genAI.getGenerativeModel({ model: modelName });
 }
 
@@ -31,25 +31,25 @@ async function withRetry<T>(
   baseDelay: number = 1000
 ): Promise<T> {
   let lastError: Error | undefined;
-  
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       return await fn();
     } catch (error) {
       lastError = error as Error;
-      
+
       // Don't retry on validation errors
       if (error instanceof Error && error.message.includes("validation")) {
         throw error;
       }
-      
+
       // Exponential backoff
       if (attempt < maxRetries - 1) {
         await new Promise(resolve => setTimeout(resolve, baseDelay * Math.pow(2, attempt)));
       }
     }
   }
-  
+
   throw lastError;
 }
 
@@ -64,14 +64,14 @@ export async function POST(request: NextRequest) {
       difficulty = 3,
       situation,
       recommendedStrategy,
-      model: modelName = "gemini-1.5-flash",
+      model: modelName = "gemini-2.5-flash",
     } = body;
 
     const model = getModel(modelName as AIModel);
 
     // Build system prompt based on mode
     let systemPrompt = "";
-    
+
     if (mode === "training" && scenario) {
       systemPrompt = getTrainingSystemPrompt(
         scenario.description,
@@ -103,8 +103,8 @@ export async function POST(request: NextRequest) {
 
     // Start chat with system prompt as first message if no history
     const chat = model.startChat({
-      history: geminiHistory.length > 0 
-        ? geminiHistory 
+      history: geminiHistory.length > 0
+        ? geminiHistory
         : [{ role: "user", parts: [{ text: systemPrompt }] }],
       generationConfig: {
         temperature: 0.9,
@@ -138,9 +138,9 @@ export async function POST(request: NextRequest) {
     const responseText = response.text();
 
     // Check if conversation should end
-    const isComplete = message.toLowerCase().includes("סיום") || 
-                      message.toLowerCase().includes("סיים") ||
-                      message.toLowerCase().includes("תודה, סיימנו");
+    const isComplete = message.toLowerCase().includes("סיום") ||
+      message.toLowerCase().includes("סיים") ||
+      message.toLowerCase().includes("תודה, סיימנו");
 
     return NextResponse.json({
       message: responseText,
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    
+
     // Return user-friendly error messages
     if (errorMessage.includes("timeout")) {
       return NextResponse.json(
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
         { status: 504 }
       );
     }
-    
+
     return NextResponse.json(
       { error: "שגיאה בעיבוד ההודעה. נסה שוב." },
       { status: 500 }
