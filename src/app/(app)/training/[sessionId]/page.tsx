@@ -1,18 +1,24 @@
 "use client";
 
-import { useEffect, useState, useRef, use } from "react";
+import { useEffect, useState, useRef, use, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Pause, StopCircle, Info } from "lucide-react";
+import { Pause, StopCircle, Info, Sparkles } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button, Card, Badge, Spinner } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
+import { TechniqueToast } from "@/components/ui/TechniqueIndicator";
 import { MessageBubble, ChatInput, TypingIndicator } from "@/components/chat";
 import { getSession, getMessages, addMessage, updateSession } from "@/lib/firebase/firestore";
+import { detectTechniques, getEncouragement, type DetectedTechnique } from "@/lib/techniques/detection";
 import { getDifficultyInfo, cn } from "@/lib/utils";
 import type { Session, Message } from "@/types";
 
 interface Props {
   params: Promise<{ sessionId: string }>;
+}
+
+interface MessageWithTechniques extends Message {
+  detectedTechniques?: DetectedTechnique[];
 }
 
 export default function TrainingSessionPage({ params }: Props) {
@@ -23,11 +29,13 @@ export default function TrainingSessionPage({ params }: Props) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const [session, setSession] = useState<Session | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<MessageWithTechniques[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [techniqueCount, setTechniqueCount] = useState(0);
+  const [latestTechnique, setLatestTechnique] = useState<DetectedTechnique | null>(null);
 
   // Load session and messages
   useEffect(() => {
@@ -109,20 +117,34 @@ export default function TrainingSessionPage({ params }: Props) {
   async function handleSend(content: string) {
     if (!session) return;
     
-    // Add user message to UI immediately
-    const userMessage: Message = {
+    // Detect techniques in user message
+    const detected = detectTechniques(content);
+    
+    // Add user message to UI immediately with detected techniques
+    const userMessage: MessageWithTechniques = {
       id: Date.now().toString(),
       role: "user",
       content,
       timestamp: new Date(),
+      detectedTechniques: detected,
     };
     
     setMessages((prev) => [...prev, userMessage]);
     setSending(true);
 
+    // Show technique toast if detected
+    if (detected.length > 0) {
+      setTechniqueCount((prev) => prev + detected.length);
+      setLatestTechnique(detected[0]);
+    }
+
     try {
       // Save user message to Firestore
-      await addMessage(sessionId, { role: "user", content });
+      await addMessage(sessionId, { 
+        role: "user", 
+        content,
+        techniquesDetected: detected.map(d => d.technique.code),
+      });
 
       // Get AI response
       const response = await fetch("/api/chat", {
@@ -143,7 +165,7 @@ export default function TrainingSessionPage({ params }: Props) {
       const data = await response.json();
       
       if (data.message) {
-        const aiMessage: Message = {
+        const aiMessage: MessageWithTechniques = {
           id: (Date.now() + 1).toString(),
           role: "ai",
           content: data.message,
@@ -217,6 +239,12 @@ export default function TrainingSessionPage({ params }: Props) {
                 <span className={cn("text-xs", difficultyInfo.color)}>
                   {difficultyInfo.name}
                 </span>
+                {techniqueCount > 0 && (
+                  <span className="flex items-center gap-1 text-xs text-emerald-400">
+                    <Sparkles size={12} />
+                    {techniqueCount} טכניקות
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -267,6 +295,7 @@ export default function TrainingSessionPage({ params }: Props) {
               message={message}
               userName={user?.displayName || undefined}
               userAvatar={user?.photoURL}
+              detectedTechniques={message.detectedTechniques}
             />
           ))}
           
@@ -275,6 +304,14 @@ export default function TrainingSessionPage({ params }: Props) {
           <div ref={messagesEndRef} />
         </div>
       </div>
+
+      {/* Technique Toast */}
+      {latestTechnique && (
+        <TechniqueToast
+          detected={latestTechnique}
+          onClose={() => setLatestTechnique(null)}
+        />
+      )}
 
       {/* Input */}
       <div className="shrink-0">

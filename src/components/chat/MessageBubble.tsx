@@ -2,16 +2,18 @@
 
 import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui";
-import { formatRelativeTime } from "@/lib/utils";
+import { TechniqueIndicator } from "@/components/ui/TechniqueIndicator";
 import type { Message } from "@/types";
+import type { DetectedTechnique } from "@/lib/techniques/detection";
 
 interface MessageBubbleProps {
   message: Message;
   userName?: string;
   userAvatar?: string | null;
+  detectedTechniques?: DetectedTechnique[];
 }
 
-export function MessageBubble({ message, userName, userAvatar }: MessageBubbleProps) {
+export function MessageBubble({ message, userName, userAvatar, detectedTechniques }: MessageBubbleProps) {
   const isUser = message.role === "user";
 
   return (
@@ -33,24 +35,24 @@ export function MessageBubble({ message, userName, userAvatar }: MessageBubblePr
       </div>
 
       {/* Message Content */}
-      <div
-        className={cn(
-          "max-w-[80%] md:max-w-[70%] px-4 py-3",
-          isUser
-            ? "bg-gradient-to-br from-[var(--accent)] to-[var(--accent-dark)] text-black rounded-2xl rounded-br-sm"
-            : "bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-2xl rounded-bl-sm"
-        )}
-      >
-        <p className="text-sm leading-relaxed whitespace-pre-wrap">
-          {message.content}
-        </p>
+      <div className="flex flex-col">
+        <div
+          className={cn(
+            "max-w-[80%] md:max-w-[70%] px-4 py-3",
+            isUser
+              ? "bg-gradient-to-br from-[var(--accent)] to-[var(--accent-dark)] text-black rounded-2xl rounded-br-sm"
+              : "bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-2xl rounded-bl-sm"
+          )}
+        >
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+            {message.content}
+          </p>
+        </div>
         
-        {/* Techniques Badge */}
-        {message.techniquesDetected && message.techniquesDetected.length > 0 && (
-          <div className="mt-2 pt-2 border-t border-[var(--border-subtle)]">
-            <span className="text-xs text-[var(--text-muted)]">
-              טכניקות: {message.techniquesDetected.join(", ")}
-            </span>
+        {/* Detected Techniques - only for user messages */}
+        {isUser && detectedTechniques && detectedTechniques.length > 0 && (
+          <div className="flex justify-end mt-1">
+            <TechniqueIndicator techniques={detectedTechniques} />
           </div>
         )}
       </div>
