@@ -1,18 +1,28 @@
 {
   "name": "NEGO - מאמן משא ומתן",
   "short_name": "NEGO",
-  "description": "כלי מקצועי ללימוד ותרגול משא ומתן עם בינה מלאכותית",
+  "description": "כלי מקצועי ללימוד ותרגול משא ומתן עם בינה מלאכותית. שפר את יכולות המשא ומתן שלך עם אימון אינטראקטיבי.",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
-  "background_color": "#08080A",
-  "theme_color": "#C9A227",
-  "orientation": "portrait-primary",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
+  "background_color": "#050508",
+  "theme_color": "#050508",
+  "orientation": "portrait",
   "dir": "rtl",
   "lang": "he",
   "id": "/",
-  "categories": ["education", "productivity", "business"],
+  "categories": [
+    "education",
+    "productivity",
+    "business",
+    "finance",
+    "training"
+  ],
   "icons": [
     {
       "src": "/icons/icon.svg",
@@ -87,7 +97,14 @@
       "sizes": "1080x1920",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "דף הבית"
+      "label": "דף הבית - NEGO"
+    },
+    {
+      "src": "/screenshots/dashboard-desktop.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "דף הבית - שולחן עבודה"
     }
   ],
   "shortcuts": [
@@ -96,21 +113,36 @@
       "short_name": "אימון",
       "description": "התחל אימון משא ומתן חדש",
       "url": "/training",
-      "icons": [{ "src": "/icons/shortcut-training.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/icons/shortcut-training.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "קבל ייעוץ",
       "short_name": "ייעוץ",
       "description": "קבל ייעוץ למצב משא ומתן אמיתי",
       "url": "/consultation",
-      "icons": [{ "src": "/icons/shortcut-advice.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/icons/shortcut-advice.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "טכניקות",
       "short_name": "טכניקות",
       "description": "צפה בספריית הטכניקות",
       "url": "/techniques",
-      "icons": [{ "src": "/icons/shortcut-techniques.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/icons/shortcut-techniques.png",
+          "sizes": "96x96"
+        }
+      ]
     }
   ],
   "related_applications": [],

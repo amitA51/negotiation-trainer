@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Heebo } from "next/font/google";
+import { Heebo, Poppins } from "next/font/google"; // [New Font] Poppins for Trust & Authority
 import "./globals.css";
 import { Providers } from "./providers";
 import { BackgroundEffects } from "@/components/ui/BackgroundEffects";
@@ -8,6 +8,13 @@ const heebo = Heebo({
   variable: "--font-heebo",
   subsets: ["hebrew", "latin"],
   weight: ["300", "400", "500", "600", "700", "800"],
+  display: "swap",
+});
+
+const poppins = Poppins({
+  variable: "--font-poppins",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -71,7 +78,7 @@ export const viewport: Viewport = {
   maximumScale: 5,
   userScalable: true,
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#08080A" },
+    { media: "(prefers-color-scheme: dark)", color: "#050508" }, // [Update] Deep Obsidian match
     { media: "(prefers-color-scheme: light)", color: "#FAFAFA" },
   ],
   colorScheme: "dark light",
@@ -107,7 +114,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${heebo.variable} font-sans antialiased`}>
+      <body className={`${heebo.variable} ${poppins.variable} font-sans antialiased`}>
         <BackgroundEffects />
         <a
           href="#main-content"

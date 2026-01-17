@@ -1,9 +1,9 @@
-// Service Worker for NEGO PWA
-// This is a basic service worker - for production use next-pwa
+// Service Worker for NEGO PWA (Obsidian Edition)
 
-const CACHE_NAME = 'nego-cache-v1';
+const CACHE_NAME = 'nego-cache-v2'; // Incremented version
 const STATIC_ASSETS = [
   '/',
+  '/offline.html',
   '/dashboard',
   '/training',
   '/consultation',
@@ -12,13 +12,13 @@ const STATIC_ASSETS = [
   '/icons/icon.svg',
 ];
 
-const DYNAMIC_CACHE = 'nego-dynamic-v1';
+const DYNAMIC_CACHE = 'nego-dynamic-v2';
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('Service Worker: Caching static assets');
+      console.log('SW: Caching static assets');
       return cache.addAll(STATIC_ASSETS);
     })
   );
@@ -47,12 +47,12 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (request.method !== 'GET') return;
 
-  // Skip API requests - always go to network
+  // Skip API requests - always go to network (except if we want to cache some API data later)
   if (url.pathname.startsWith('/api/')) {
     return;
   }
 
-  // For navigation requests, try network first, then cache
+  // Navigation requests: Network First -> Cache -> Offline Page
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
@@ -66,14 +66,15 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => {
           return caches.match(request).then((response) => {
-            return response || caches.match('/');
+            // Return cached page or offline fallback
+            return response || caches.match('/offline.html');
           });
         })
     );
     return;
   }
 
-  // For static assets, use cache-first strategy
+  // Static assets: Cache First -> Network
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       if (cachedResponse) {
@@ -81,7 +82,6 @@ self.addEventListener('fetch', (event) => {
       }
 
       return fetch(request).then((networkResponse) => {
-        // Only cache successful responses
         if (networkResponse.status === 200) {
           const responseClone = networkResponse.clone();
           caches.open(DYNAMIC_CACHE).then((cache) => {
@@ -94,22 +94,10 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Background sync for offline actions
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-messages') {
-    event.waitUntil(syncMessages());
-  }
-});
-
-async function syncMessages() {
-  // Implement message sync logic here
-  console.log('Service Worker: Syncing messages');
-}
-
-// Push notifications
+// Background sync and Push notifications kept as is
 self.addEventListener('push', (event) => {
   const data = event.data?.json() ?? {};
-  
+
   const options = {
     body: data.body || 'יש לך הודעה חדשה',
     icon: '/icons/icon-192.png',
@@ -129,24 +117,18 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// Notification click handler
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-
   if (event.action === 'close') return;
-
   const urlToOpen = event.notification.data?.url || '/dashboard';
-
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
-        // If a window is already open, focus it
         for (const client of clientList) {
           if (client.url.includes(urlToOpen) && 'focus' in client) {
             return client.focus();
           }
         }
-        // Otherwise open a new window
         return clients.openWindow(urlToOpen);
       })
   );
