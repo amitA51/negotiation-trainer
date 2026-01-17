@@ -19,7 +19,7 @@ export function MessageBubble({ message, userName, userAvatar, detectedTechnique
   return (
     <div
       className={cn(
-        "flex gap-3 animate-fade-in-up",
+        "flex gap-3 animate-fade-in-up message-list-item",
         isUser ? "flex-row-reverse" : "flex-row"
       )}
     >

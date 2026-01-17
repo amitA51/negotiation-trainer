@@ -72,3 +72,25 @@ export { MagneticButton } from "./MagneticButton";
 export { SpotlightCard } from "./SpotlightCard";
 export { TextReveal } from "./TextReveal";
 export { BentoGrid, BentoGridItem } from "./BentoGrid";
+
+// Loading & Empty States
+export {
+  SuspenseLoader,
+  CardFallback,
+  ListFallback,
+  PageFallback,
+  InlineFallback,
+} from "./SuspenseLoader";
+
+export {
+  EmptyState,
+  SearchEmptyState,
+  NoDataEmptyState,
+  NoSessionsEmptyState,
+  NoAchievementsEmptyState,
+} from "./EmptyState";
+export type { EmptyStateProps } from "./EmptyState";
+
+// Error Handling
+export { ErrorBoundaryUI, InlineError } from "./ErrorBoundary";
+export type { ErrorBoundaryProps } from "./ErrorBoundary";

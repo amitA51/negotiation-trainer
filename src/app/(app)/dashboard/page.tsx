@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, Suspense, lazy } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   Target,
@@ -11,19 +12,35 @@ import {
   BookOpen,
   Award,
   Flame,
-  Trophy,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button, Badge, AnimatedCounter, SkeletonStats } from "@/components/ui";
+import { Button, Badge, AnimatedCounter, SkeletonStats, Skeleton } from "@/components/ui";
 import { useDashboardData } from "@/lib/hooks/useSWR";
 import { useAchievements } from "@/lib/hooks/useAchievements";
 import { formatRelativeTime } from "@/lib/utils";
-import { BentoGrid, BentoGridItem } from "@/components/ui/BentoGrid";
-import { TextReveal } from "@/components/ui/TextReveal";
-import { MagneticButton } from "@/components/ui/MagneticButton";
-import { SpotlightCard } from "@/components/ui/SpotlightCard";
-import { AchievementShowcase } from "@/components/achievements";
 import { DAILY_TIPS_DETAILED } from "@/data/tips";
+
+// Dynamic imports for heavy components - reduces initial bundle size
+const BentoGrid = dynamic(() => import("@/components/ui/BentoGrid").then(mod => ({ default: mod.BentoGrid })), {
+  ssr: true,
+});
+const BentoGridItem = dynamic(() => import("@/components/ui/BentoGrid").then(mod => ({ default: mod.BentoGridItem })), {
+  ssr: true,
+});
+const TextReveal = dynamic(() => import("@/components/ui/TextReveal").then(mod => ({ default: mod.TextReveal })), {
+  ssr: true,
+  loading: () => <span className="text-5xl md:text-6xl font-bold text-[var(--accent)]">מוכן לנצח?</span>,
+});
+const MagneticButton = dynamic(() => import("@/components/ui/MagneticButton").then(mod => ({ default: mod.MagneticButton })), {
+  ssr: true,
+});
+const SpotlightCard = dynamic(() => import("@/components/ui/SpotlightCard").then(mod => ({ default: mod.SpotlightCard })), {
+  ssr: true,
+});
+const AchievementShowcase = dynamic(() => import("@/components/achievements").then(mod => ({ default: mod.AchievementShowcase })), {
+  ssr: false,
+  loading: () => <Skeleton className="h-48 w-full rounded-2xl" />,
+});
 
 export default function DashboardPage() {
   const { user } = useAuth();

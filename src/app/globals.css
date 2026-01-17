@@ -1,12 +1,11 @@
+/* === Google Fonts Import (must be first) === */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 /* ============================================
    NEGO - OBSIDIAN AIR (ULTIMATE EDITION)
    A weightless, deep dark interface
    ============================================ */
-
-/* === Google Fonts Import === */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 /* === CSS Variables === */
 :root {
@@ -769,7 +768,7 @@ html.light body::before {
 /* === Desktop Specific === */
 @media (min-width: 1025px) {
   .desktop-sidebar {
-    padding-right: 16rem;
+    padding-inline-end: 16rem; /* RTL-aware: padding-right in LTR, padding-left in RTL */
   }
 }
 
@@ -916,9 +915,9 @@ input:-webkit-autofill:focus {
   justify-content: center;
 }
 
-/* Accent border left */
+/* Accent border - RTL aware (shows on the start side) */
 .accent-border-r {
-  border-right: 3px solid var(--accent);
+  border-inline-start: 3px solid var(--accent);
 }
 
 /* Minimal link hover */
@@ -976,4 +975,82 @@ input:-webkit-autofill:focus {
 
 .list-item-clean:hover {
   background: var(--bg-hover);
+}
+
+/* ============================================
+   PERFORMANCE OPTIMIZATIONS
+   ============================================ */
+
+/* Content-visibility for long lists - improves scrolling performance */
+.message-list-item {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 80px; /* Estimated height for messages */
+}
+
+.achievement-grid-item {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 120px; /* Estimated height for achievement cards */
+}
+
+.session-list-item {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 100px; /* Estimated height for session items */
+}
+
+/* Optimize large lists with contain property */
+.virtualized-list {
+  contain: strict;
+  overflow: auto;
+}
+
+/* Fade-in animation for staggered lists */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  opacity: 0;
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+/* Will-change hints for frequently animated elements */
+.will-animate {
+  will-change: transform, opacity;
+}
+
+/* GPU acceleration for smooth animations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Soft pulse animation */
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
