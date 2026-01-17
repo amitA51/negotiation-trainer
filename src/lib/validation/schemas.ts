@@ -34,8 +34,8 @@ export const AIModelSchema = z.enum([
 export const ChatRequestSchema = z.object({
   message: z
     .string()
-    .min(1, 'Message is required')
-    .max(5000, 'Message exceeds maximum length (5000 chars)'),
+    .max(5000, 'Message exceeds maximum length (5000 chars)')
+    .optional(), // Allow empty for initial session start
   
   history: z
     .array(MessageSchema)
@@ -50,10 +50,29 @@ export const ChatRequestSchema = z.object({
   
   model: AIModelSchema.optional(),
   
-  sessionId: z.string().uuid('Invalid session ID').optional(),
+  sessionId: z.string().optional(), // UUID validation removed - can be any string
   
-  consultationId: z.string().uuid('Invalid consultation ID').optional(),
-});
+  consultationId: z.string().optional(), // UUID validation removed
+  
+  scenario: z.any().optional(), // For backward compatibility
+  
+  situation: z.string().optional(), // For simulation mode
+  
+  recommendedStrategy: z.string().optional(), // For simulation mode
+}).refine(
+  (data) => {
+    // If history is empty, message is not required (initial session)
+    // If history exists, message is required
+    if (data.history && data.history.length > 0) {
+      return data.message && data.message.length > 0;
+    }
+    return true;
+  },
+  {
+    message: 'Message is required when continuing conversation',
+    path: ['message'],
+  }
+);
 
 export type ChatRequest = z.infer<typeof ChatRequestSchema>;
 

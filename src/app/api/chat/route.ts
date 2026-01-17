@@ -39,8 +39,16 @@ export async function POST(request: NextRequest) {
       return rateLimitResponse;
     }
 
+    // Get raw body first (before validation consumes it)
+    const rawBody = await request.json();
+    
+    // Create a new request with the raw body for validation
+    const validationRequest = {
+      json: async () => rawBody,
+    } as Request;
+
     // 🛡️ Validate Request Body
-    const validatedData = await validateRequest(request, ChatRequestSchema);
+    const validatedData = await validateRequest(validationRequest, ChatRequestSchema);
     
     const {
       message,
@@ -55,21 +63,11 @@ export async function POST(request: NextRequest) {
 
     // Build system prompt based on mode
     let systemPrompt = "";
-    let scenario: any = null;
-    let situation: string | undefined;
-    let recommendedStrategy: string | undefined;
-
-    // For backward compatibility, parse scenario from body if needed
-    const rawBody = await request.clone().json();
-    if (rawBody.scenario) {
-      scenario = rawBody.scenario;
-    }
-    if (rawBody.situation) {
-      situation = rawBody.situation;
-    }
-    if (rawBody.recommendedStrategy) {
-      recommendedStrategy = rawBody.recommendedStrategy;
-    }
+    
+    // Get additional fields from raw body (for backward compatibility)
+    const scenario = rawBody.scenario;
+    const situation = rawBody.situation;
+    const recommendedStrategy = rawBody.recommendedStrategy;
 
     if (mode === "training" && scenario) {
       systemPrompt = getTrainingSystemPrompt(
@@ -115,7 +113,7 @@ export async function POST(request: NextRequest) {
 
     // If this is the first message and we have history, we already have the system prompt
     // If no history, the system prompt was the first message, so send "התחל" to start
-    if (geminiHistory.length === 0) {
+    if (geminiHistory.length === 0 || !message) {
       // First interaction - AI should start the conversation
       const startResult = await withRetry(
         () => withTimeout(chat.sendMessage("התחל את השיחה"), 30000),
