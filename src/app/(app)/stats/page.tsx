@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useMemo } from "react";
 import dynamic from "next/dynamic";
 import {
   Target,
@@ -15,10 +15,9 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui";
-import { getUserStats } from "@/lib/firebase/firestore";
+import { useUserStats } from "@/lib/hooks/useSWR";
 import { techniques } from "@/data/techniques";
 import { cn, getScoreColor } from "@/lib/utils";
-import type { UserStats } from "@/types";
 
 // Dynamically import Recharts to reduce initial bundle size
 const ResponsiveContainer = dynamic(
@@ -48,25 +47,7 @@ const CartesianGrid = dynamic(
 
 export default function StatsPage() {
   const { user } = useAuth();
-  const [stats, setStats] = useState<UserStats | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadStats() {
-      if (!user) return;
-
-      try {
-        const statsData = await getUserStats(user.uid);
-        setStats(statsData);
-      } catch (error) {
-        console.error("Error loading stats:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadStats();
-  }, [user]);
+  const { data: stats, isLoading: loading } = useUserStats(user?.uid);
 
   // Memoize expensive calculations
   const chartData = useMemo(() => 

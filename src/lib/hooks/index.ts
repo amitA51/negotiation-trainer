@@ -100,8 +100,8 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
       const valueToStore = value instanceof Function ? value(getStoredValue()) : value;
       localStorage.setItem(key, JSON.stringify(valueToStore));
       window.dispatchEvent(new Event("storage"));
-    } catch (error) {
-      console.error("Error saving to localStorage:", error);
+    } catch {
+      // Failed to save to localStorage - storage may be full or disabled
     }
   };
 

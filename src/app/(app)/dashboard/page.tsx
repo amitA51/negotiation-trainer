@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import {
   Target,
@@ -14,10 +14,9 @@ import {
   Flame,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button, Card, Badge, AnimatedCounter, SkeletonStats } from "@/components/ui";
-import { getUserStats, getActiveSession } from "@/lib/firebase/firestore";
+import { Button, Badge, AnimatedCounter, SkeletonStats } from "@/components/ui";
+import { useDashboardData } from "@/lib/hooks/useSWR";
 import { formatRelativeTime } from "@/lib/utils";
-import type { UserStats, Session } from "@/types";
 
 // Daily tips array
 const DAILY_TIPS = [
@@ -45,9 +44,7 @@ const DAILY_TIPS = [
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const [stats, setStats] = useState<UserStats | null>(null);
-  const [activeSession, setActiveSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { stats, activeSession, loading } = useDashboardData(user?.uid);
 
   // Get daily tip based on day of year
   const dailyTip = useMemo(() => {
@@ -63,28 +60,6 @@ export default function DashboardPage() {
     if (hour < 21) return "ערב טוב";
     return "לילה טוב";
   }, []);
-
-  useEffect(() => {
-    async function loadData() {
-      if (!user) return;
-      
-      try {
-        const [statsData, sessionData] = await Promise.all([
-          getUserStats(user.uid),
-          getActiveSession(user.uid),
-        ]);
-        
-        setStats(statsData);
-        setActiveSession(sessionData);
-      } catch (err) {
-        console.error("Error loading dashboard data:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadData();
-  }, [user]);
 
   const firstName = user?.displayName?.split(" ")[0] || "משתמש";
 

@@ -5,15 +5,12 @@ import {
   getDocs,
   setDoc,
   updateDoc,
-  deleteDoc,
   query,
   where,
   orderBy,
   limit,
   addDoc,
   serverTimestamp,
-  Timestamp,
-  DocumentReference,
 } from "firebase/firestore";
 import { db } from "./config";
 import type {

@@ -21,8 +21,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { userId, action } = body;
     
-    console.log('[Pairing API] Request received:', { userId, action });
-    
     if (!userId) {
       return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
     }
@@ -33,7 +31,6 @@ export async function POST(request: NextRequest) {
         
         // Generate new code
         const code = generatePairingCode();
-        console.log('[Pairing API] Generated code:', code);
         
         await db.collection('pairingCodes').add({
           code,
@@ -42,7 +39,6 @@ export async function POST(request: NextRequest) {
           createdAt: FieldValue.serverTimestamp(),
           expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
         });
-        console.log('[Pairing API] Code saved to Firestore');
         
         const botUsername = 'Negotiationthebot';
         const deepLink = `https://t.me/${botUsername}?start=${code}`;
@@ -53,19 +49,19 @@ export async function POST(request: NextRequest) {
           deepLink,
           expiresIn: 15 * 60, // seconds
         });
-      } catch (firestoreError: any) {
-        console.error('[Pairing API] Firestore error:', firestoreError.message, firestoreError.code);
+      } catch (firestoreError: unknown) {
+        const errorMessage = firestoreError instanceof Error ? firestoreError.message : 'Unknown error';
         return NextResponse.json({ 
           error: 'Firestore error', 
-          details: firestoreError.message 
+          details: errorMessage 
         }, { status: 500 });
       }
     }
     
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-  } catch (error: any) {
-    console.error('[Pairing API] General error:', error.message);
-    return NextResponse.json({ error: 'Internal error', details: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ error: 'Internal error', details: errorMessage }, { status: 500 });
   }
 }
 
@@ -100,8 +96,7 @@ export async function PUT(request: NextRequest) {
       success: result.ok,
       description: result.description,
     });
-  } catch (error) {
-    console.error('Webhook setup error:', error);
+  } catch {
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }
@@ -113,8 +108,7 @@ export async function GET() {
     const result = await response.json();
     
     return NextResponse.json(result);
-  } catch (error) {
-    console.error('Get webhook info error:', error);
+  } catch {
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }

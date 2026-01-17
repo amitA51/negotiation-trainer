@@ -30,9 +30,7 @@ export async function analyzeSession(
       recommendations: analysis.recommendations || [],
       dealSummary: analysis.dealSummary || "לא הושגה עסקה",
     };
-  } catch (error) {
-    console.error("Error analyzing session:", error);
-    
+  } catch {
     // Return a default analysis if something goes wrong
     return {
       score: 50,

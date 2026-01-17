@@ -50,19 +50,6 @@ export function formatDuration(seconds: number): string {
 }
 
 /**
- * Generate a random linking code for Telegram
- */
-export function generateLinkingCode(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = "";
-  for (let i = 0; i < 8; i++) {
-    if (i === 4) code += "-";
-    code += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return code;
-}
-
-/**
  * Truncate text with ellipsis
  */
 export function truncate(text: string, maxLength: number): string {

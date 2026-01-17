@@ -358,12 +358,11 @@ async function handleConversation(message: TelegramMessage) {
       
       await sendTelegramMessage(chatId, data.message);
     }
-  } catch (error) {
-    console.error('Error getting AI response:', error);
-    await sendTelegramMessage(chatId,
-      '⚠️ שגיאה בעיבוד ההודעה. נסה שוב.'
-    );
-  }
+    } catch {
+      await sendTelegramMessage(chatId,
+        '⚠️ שגיאה בעיבוד ההודעה. נסה שוב.'
+      );
+    }
 }
 
 export async function POST(request: NextRequest) {
@@ -385,8 +384,7 @@ export async function POST(request: NextRequest) {
     }
     
     return NextResponse.json({ ok: true });
-  } catch (error) {
-    console.error('Telegram webhook error:', error);
+  } catch {
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }

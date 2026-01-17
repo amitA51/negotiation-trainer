@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { 
   Clock, 
@@ -17,33 +17,14 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge, Skeleton } from "@/components/ui";
-import { getUserSessions } from "@/lib/firebase/firestore";
+import { useUserSessions } from "@/lib/hooks/useSWR";
 import { formatRelativeTime, getDifficultyInfo, cn } from "@/lib/utils";
-import type { Session } from "@/types";
 
 export default function HistoryPage() {
   const { user } = useAuth();
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: sessions = [], isLoading: loading } = useUserSessions(user?.uid, 50);
   const [filter, setFilter] = useState<"all" | "training" | "consultation">("all");
   const [searchQuery, setSearchQuery] = useState("");
-
-  useEffect(() => {
-    async function loadSessions() {
-      if (!user) return;
-      
-      try {
-        const sessionsData = await getUserSessions(user.uid, 50);
-        setSessions(sessionsData);
-      } catch (error) {
-        console.error("Error loading sessions:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadSessions();
-  }, [user]);
 
   const filteredSessions = useMemo(() => {
     return sessions.filter((session) => {

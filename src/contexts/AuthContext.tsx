@@ -41,7 +41,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(userData);
           setError(null);
         } catch (err) {
-          console.error("Error fetching user data:", err);
           setError(err as Error);
           setUser(null);
         }
