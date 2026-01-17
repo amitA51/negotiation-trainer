@@ -2,6 +2,20 @@
 
 import { useEffect, useRef, RefObject } from "react";
 
+// ==========================================
+// FIREBASE HOOKS - SWR & REALTIME
+// ==========================================
+
+// Export SWR hooks (legacy, for backward compatibility)
+export * from "./useSWR";
+
+// Export Real-time hooks (NEW - for better performance)
+export * from "./useFirebaseRealtime";
+
+// ==========================================
+// UTILITY HOOKS
+// ==========================================
+
 // Smooth scroll to element
 export function useSmoothScroll() {
   const scrollToElement = (elementId: string, offset = 0) => {

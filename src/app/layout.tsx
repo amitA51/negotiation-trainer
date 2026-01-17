@@ -1,21 +1,25 @@
 import type { Metadata, Viewport } from "next";
-import { Heebo, Poppins } from "next/font/google"; // [New Font] Poppins for Trust & Authority
+import { Heebo, Poppins } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { BackgroundEffects } from "@/components/ui/BackgroundEffects";
 
+// Optimized Heebo - reduced weights from 6 to 4 (saves ~60KB)
 const heebo = Heebo({
   variable: "--font-heebo",
   subsets: ["hebrew", "latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"], // Removed 300 and 800
   display: "swap",
+  preload: true, // Preload for faster initial render
 });
 
+// Optimized Poppins - reduced weights from 4 to 3 (saves ~30KB)
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "600", "700"], // Removed 500
   display: "swap",
+  preload: false, // Load on-demand for secondary font
 });
 
 export const metadata: Metadata = {

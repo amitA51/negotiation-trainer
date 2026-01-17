@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getTrainingSystemPrompt, getConsultationSystemPrompt, getSimulationSystemPrompt } from "@/lib/gemini/prompts";
 import type { AIModel } from "@/types";
+import { ChatRequestSchema, validateRequest } from "@/lib/validation/schemas";
+import { 
+  withTimeout, 
+  withRetry, 
+  checkRateLimit, 
+  handleAPIError,
+  logAPICall,
+  getClientIP 
+} from "@/lib/utils/api-helpers";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -16,61 +25,51 @@ function getModel(modelName: AIModel = "gemini-2.5-flash") {
   return genAI.getGenerativeModel({ model: modelName });
 }
 
-// Timeout wrapper for async operations
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-  const timeout = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error("Request timeout")), timeoutMs)
-  );
-  return Promise.race([promise, timeout]);
-}
-
-// Retry wrapper with exponential backoff
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  maxRetries: number = 3,
-  baseDelay: number = 1000
-): Promise<T> {
-  let lastError: Error | undefined;
-
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error as Error;
-
-      // Don't retry on validation errors
-      if (error instanceof Error && error.message.includes("validation")) {
-        throw error;
-      }
-
-      // Exponential backoff
-      if (attempt < maxRetries - 1) {
-        await new Promise(resolve => setTimeout(resolve, baseDelay * Math.pow(2, attempt)));
-      }
-    }
-  }
-
-  throw lastError;
-}
-
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  
   try {
-    const body = await request.json();
+    // 🛡️ Rate Limiting - 20 requests per minute per IP
+    const rateLimitResponse = await checkRateLimit(request, {
+      uniqueTokenPerInterval: 20,
+      interval: 60000, // 1 minute
+    });
+
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
+    // 🛡️ Validate Request Body
+    const validatedData = await validateRequest(request, ChatRequestSchema);
+    
     const {
       message,
       history = [],
       mode = "training",
-      scenario,
       difficulty = 3,
-      situation,
-      recommendedStrategy,
       model: modelName = "gemini-2.5-flash",
-    } = body;
+      scenarioId,
+    } = validatedData;
 
     const model = getModel(modelName as AIModel);
 
     // Build system prompt based on mode
     let systemPrompt = "";
+    let scenario: any = null;
+    let situation: string | undefined;
+    let recommendedStrategy: string | undefined;
+
+    // For backward compatibility, parse scenario from body if needed
+    const rawBody = await request.clone().json();
+    if (rawBody.scenario) {
+      scenario = rawBody.scenario;
+    }
+    if (rawBody.situation) {
+      situation = rawBody.situation;
+    }
+    if (rawBody.recommendedStrategy) {
+      recommendedStrategy = rawBody.recommendedStrategy;
+    }
 
     if (mode === "training" && scenario) {
       systemPrompt = getTrainingSystemPrompt(
@@ -96,7 +95,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Convert history to Gemini format
-    const geminiHistory = history.map((msg: { role: string; content: string }) => ({
+    const geminiHistory = history.map((msg) => ({
       role: msg.role === "user" ? "user" : "model",
       parts: [{ text: msg.content }],
     }));
@@ -120,9 +119,13 @@ export async function POST(request: NextRequest) {
       // First interaction - AI should start the conversation
       const startResult = await withRetry(
         () => withTimeout(chat.sendMessage("התחל את השיחה"), 30000),
-        3
+        { maxAttempts: 3, initialDelay: 1000 }
       );
       const startResponse = await startResult.response;
+      
+      const duration = Date.now() - startTime;
+      logAPICall("/api/chat", "POST", duration, 200);
+      
       return NextResponse.json({
         message: startResponse.text(),
         isStart: true,
@@ -132,7 +135,7 @@ export async function POST(request: NextRequest) {
     // Send the user's message with timeout and retry
     const result = await withRetry(
       () => withTimeout(chat.sendMessage(message), 30000),
-      3
+      { maxAttempts: 3, initialDelay: 1000 }
     );
     const response = await result.response;
     const responseText = response.text();
@@ -142,24 +145,23 @@ export async function POST(request: NextRequest) {
       message.toLowerCase().includes("סיים") ||
       message.toLowerCase().includes("תודה, סיימנו");
 
+    const duration = Date.now() - startTime;
+    logAPICall("/api/chat", "POST", duration, 200);
+
     return NextResponse.json({
       message: responseText,
       isComplete,
     });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-
-    // Return user-friendly error messages
-    if (errorMessage.includes("timeout")) {
-      return NextResponse.json(
-        { error: "הבקשה נמשכה יותר מדי זמן. נסה שוב." },
-        { status: 504 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: "שגיאה בעיבוד ההודעה. נסה שוב." },
-      { status: 500 }
-    );
+    const duration = Date.now() - startTime;
+    logAPICall("/api/chat", "POST", duration, 500);
+    
+    console.error("[Chat API Error]", {
+      error,
+      ip: getClientIP(request),
+      timestamp: new Date().toISOString(),
+    });
+    
+    return handleAPIError(error);
   }
 }
