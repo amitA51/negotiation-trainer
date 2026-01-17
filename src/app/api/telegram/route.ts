@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import { verifyTelegramSignature } from '@/lib/utils/api-helpers';
+import { trackEvent } from '@/lib/utils/sentry';
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
 const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
@@ -366,7 +368,21 @@ async function handleConversation(message: TelegramMessage) {
 }
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  
   try {
+    // 🛡️ Verify Telegram webhook signature
+    if (!verifyTelegramSignature(request, TELEGRAM_BOT_TOKEN)) {
+      trackEvent('telegram_webhook_verification_failed', {
+        ip: request.headers.get('x-forwarded-for') || 'unknown',
+      }, 'warning');
+      
+      return NextResponse.json(
+        { error: 'Unauthorized webhook' },
+        { status: 401 }
+      );
+    }
+    
     const update: TelegramUpdate = await request.json();
     
     if (!update.message) {
@@ -374,6 +390,13 @@ export async function POST(request: NextRequest) {
     }
     
     const message = update.message;
+    
+    // Track webhook received
+    trackEvent('telegram_webhook_received', {
+      updateId: update.update_id,
+      chatId: message.chat.id,
+      hasText: !!message.text,
+    });
     
     // Handle commands
     if (message.text?.startsWith('/')) {
@@ -383,8 +406,19 @@ export async function POST(request: NextRequest) {
       await handleConversation(message);
     }
     
+    const duration = Date.now() - startTime;
+    console.log(`[Telegram] Webhook processed in ${duration}ms`);
+    
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    console.error('[Telegram] Webhook error:', error, `(${duration}ms)`);
+    
+    trackEvent('telegram_webhook_error', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      duration,
+    }, 'error');
+    
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }
