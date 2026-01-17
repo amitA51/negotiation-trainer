@@ -12,13 +12,21 @@ let adminDb: Firestore;
  * 3. Base64 encoded - alternative format
  */
 function parsePrivateKey(raw: string | undefined): string | undefined {
-  if (!raw) return undefined;
+  if (!raw) {
+    console.error('[Firebase Admin] FIREBASE_ADMIN_PRIVATE_KEY is not set');
+    return undefined;
+  }
   
   let key = raw.trim();
+  
+  // Log first 50 chars for debugging (safe - doesn't expose the key)
+  console.log('[Firebase Admin] Private key starts with:', key.substring(0, 50));
+  console.log('[Firebase Admin] Private key length:', key.length);
   
   // Remove surrounding quotes if present
   if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
     key = key.slice(1, -1);
+    console.log('[Firebase Admin] Removed surrounding quotes');
   }
   
   // Check if it's Base64 encoded (no BEGIN marker)
@@ -27,6 +35,7 @@ function parsePrivateKey(raw: string | undefined): string | undefined {
       const decoded = Buffer.from(key, 'base64').toString('utf-8');
       if (decoded.includes('-----BEGIN')) {
         key = decoded;
+        console.log('[Firebase Admin] Decoded from Base64');
       }
     } catch {
       // Not base64, continue with normal processing
@@ -38,10 +47,18 @@ function parsePrivateKey(raw: string | undefined): string | undefined {
   key = key.replace(/\\n/g, '\n');
   
   // Validate the key format
-  if (!key.includes('-----BEGIN PRIVATE KEY-----') || !key.includes('-----END PRIVATE KEY-----')) {
+  if (!key.includes('-----BEGIN PRIVATE KEY-----')) {
+    console.error('[Firebase Admin] Key missing BEGIN marker');
+    console.error('[Firebase Admin] Key contains:', key.includes('BEGIN'), key.includes('PRIVATE'), key.includes('KEY'));
     throw new Error('Invalid private key format - must contain BEGIN/END PRIVATE KEY markers');
   }
   
+  if (!key.includes('-----END PRIVATE KEY-----')) {
+    console.error('[Firebase Admin] Key missing END marker');
+    throw new Error('Invalid private key format - must contain BEGIN/END PRIVATE KEY markers');
+  }
+  
+  console.log('[Firebase Admin] Private key parsed successfully');
   return key;
 }
 
