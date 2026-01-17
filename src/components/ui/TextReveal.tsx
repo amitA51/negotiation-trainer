@@ -1,6 +1,6 @@
 "use client";
 
-import { useInView, motion } from "framer-motion";
+import { useInView, motion, Variants } from "framer-motion";
 import { useRef } from "react";
 import { cn } from "@/lib/utils";
 
@@ -24,15 +24,15 @@ export const TextReveal = ({
 
     const chars = text.split("");
 
-    const container = {
+    const container: Variants = {
         hidden: { opacity: 0 },
-        visible: (i = 1) => ({
+        visible: (i: number = 1) => ({
             opacity: 1,
             transition: { staggerChildren: 0.03, delayChildren: delay * i },
         }),
     };
 
-    const child = {
+    const child: Variants = {
         visible: {
             opacity: 1,
             y: 0,
