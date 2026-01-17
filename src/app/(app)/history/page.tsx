@@ -89,19 +89,20 @@ export default function HistoryPage() {
         <div className="max-w-4xl mx-auto flex flex-col md:flex-row gap-4">
           {/* Search */}
           <div className="relative flex-1">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={18} />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={18} aria-hidden="true" />
             <input 
               type="text"
               placeholder="חפש לפי כותרת או תיאור…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="חפש לפי כותרת או תיאור"
               className="w-full h-10 pr-10 pl-4 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] transition-colors"
             />
           </div>
 
           {/* Filter Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
-            <Filter size={14} className="text-[var(--text-muted)] ml-2 shrink-0" />
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0" role="radiogroup" aria-label="סינון לפי סוג">
+            <Filter size={14} className="text-[var(--text-muted)] ml-2 shrink-0" aria-hidden="true" />
             {[
               { id: "all", label: "הכל" },
               { id: "training", label: "אימונים" },
@@ -110,6 +111,8 @@ export default function HistoryPage() {
               <button
                 key={f.id}
                 onClick={() => setFilter(f.id as typeof filter)}
+                role="radio"
+                aria-checked={filter === f.id}
                 className={cn(
                   "shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors",
                   filter === f.id

@@ -16,9 +16,12 @@ export interface User {
   settings: UserSettings;
 }
 
+export type AIModel = "gemini-1.5-flash" | "gemini-1.5-pro" | "gemini-2.0-flash-exp";
+
 export interface UserSettings {
   preferredDifficulty: number;
   notifications: boolean;
+  preferredModel?: AIModel;
 }
 
 export interface UserStats {

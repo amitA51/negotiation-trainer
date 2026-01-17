@@ -16,42 +16,16 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button, Textarea } from "@/components/ui";
+import { useToast } from "@/components/ui/Toast";
 import { createConsultation, addConsultationMessage } from "@/lib/firebase/firestore";
+import { CONSULTATION_EXAMPLES, CONSULTATION_TIPS } from "@/data/tips";
+import { MIN_CONSULTATION_CHARS } from "@/data/constants";
 import { cn } from "@/lib/utils";
-
-const exampleSituations = [
-  {
-    icon: TrendingUp,
-    title: "משא ומתן שכר",
-    text: "קיבלתי הצעת עבודה ואני רוצה לנהל משא ומתן על השכר",
-  },
-  {
-    icon: Users,
-    title: "מול הבוס",
-    text: "אני צריך לבקש מהבוס לעבוד מהבית יותר ימים בשבוע",
-  },
-  {
-    icon: Target,
-    title: "משא ומתן עסקי",
-    text: "יש לי פגישה עם ספק ואני רוצה להוריד את המחירים",
-  },
-  {
-    icon: Shield,
-    title: "קונפליקט אישי",
-    text: "השכן שלי עושה רעש בלילות ואני לא יודע איך לגשת לזה",
-  },
-];
-
-const tips = [
-  "מי הצד השני ומה הקשר שלכם?",
-  "מה המטרה הסופית שלך?",
-  "מה האתגרים או ההתנגדויות הצפויות?",
-  "יש לך אלטרנטיבות (BATNA)?",
-];
 
 export default function ConsultationPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [situation, setSituation] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -70,13 +44,14 @@ export default function ConsultationPage() {
       router.push(`/consultation/${consultationId}`);
     } catch (error) {
       console.error("Error creating consultation:", error);
+      showToast("שגיאה ביצירת הייעוץ. נסה שוב.", "error");
     } finally {
       setLoading(false);
     }
   };
 
   const characterCount = situation.length;
-  const isValidLength = characterCount >= 20;
+  const isValidLength = characterCount >= MIN_CONSULTATION_CHARS;
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -106,7 +81,7 @@ export default function ConsultationPage() {
                 <h2 className="font-semibold text-lg text-[var(--text-primary)] mb-1">
                   ספר לי על המצב
                 </h2>
-                <p className="text-sm text-[var(--text-secondary)]">
+                <p className="text-sm text-[var(--text-muted)]">
                   ככל שתספק יותר פרטים, העצות יהיו מדויקות יותר
                 </p>
               </div>
@@ -139,7 +114,7 @@ export default function ConsultationPage() {
                 <span className={cn(
                   isValidLength ? "text-green-500" : "text-[var(--text-muted)]"
                 )}>
-                  {characterCount} תווים {!isValidLength && "(מינימום 20)"}
+                  {characterCount} תווים {!isValidLength && `(מינימום ${MIN_CONSULTATION_CHARS})`}
                 </span>
               </div>
             </div>
@@ -151,7 +126,7 @@ export default function ConsultationPage() {
                 <span className="text-sm font-medium text-[var(--accent)]">מה כדאי לכלול:</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {tips.map((tip, index) => (
+                {CONSULTATION_TIPS.map((tip, index) => (
                   <div key={index} className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
                     <div className="w-1 h-1 rounded-full bg-[var(--text-muted)]" aria-hidden="true" />
                     {tip}
@@ -182,7 +157,7 @@ export default function ConsultationPage() {
           דוגמאות למצבים נפוצים
         </h3>
         <div className="grid md:grid-cols-2 gap-3">
-          {exampleSituations.map((example, index) => {
+          {CONSULTATION_EXAMPLES.map((example, index) => {
             const IconComponent = example.icon;
             return (
               <button

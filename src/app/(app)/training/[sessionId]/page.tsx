@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation";
 import { Pause, StopCircle, Info, Sparkles } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button, Card, Badge, Spinner } from "@/components/ui";
+import { SkeletonChat } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { TechniqueToast } from "@/components/ui/TechniqueIndicator";
 import { MessageBubble, ChatInput, TypingIndicator } from "@/components/chat";
 import { getSession, getMessages, addMessage, updateSession } from "@/lib/firebase/firestore";
 import { detectTechniques, getEncouragement, type DetectedTechnique } from "@/lib/techniques/detection";
-import { getDifficultyInfo, cn } from "@/lib/utils";
+import { getDifficultyInfo, cn, getPreferredModel } from "@/lib/utils";
 import type { Session, Message } from "@/types";
 
 interface Props {
@@ -92,6 +93,7 @@ export default function TrainingSessionPage({ params }: Props) {
           mode: "training",
           scenario: sessionData.scenario,
           difficulty: sessionData.difficulty,
+          model: getPreferredModel(user),
         }),
       });
 
@@ -159,6 +161,7 @@ export default function TrainingSessionPage({ params }: Props) {
           mode: "training",
           scenario: session.scenario,
           difficulty: session.difficulty,
+          model: getPreferredModel(user),
         }),
       });
 
@@ -207,7 +210,7 @@ export default function TrainingSessionPage({ params }: Props) {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Spinner size="lg" />
+        <SkeletonChat messages={3} />
       </div>
     );
   }
@@ -253,6 +256,8 @@ export default function TrainingSessionPage({ params }: Props) {
             <button
               onClick={() => setShowInfo(!showInfo)}
               className="p-2 rounded-[var(--radius-md)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors"
+              aria-label="הצג פרטי תרחיש"
+              aria-expanded={showInfo}
             >
               <Info size={20} />
             </button>

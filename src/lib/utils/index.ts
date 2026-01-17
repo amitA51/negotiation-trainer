@@ -110,6 +110,27 @@ export function getCategoryInfo(category: string): {
     psychology: { name: "פסיכולוגיה והשפעה", icon: "Brain", color: "text-purple-400" },
     hardball: { name: "טקטיקות קשוחות", icon: "Swords", color: "text-red-400" },
   };
-  
+
   return categories[category] || { name: category, icon: "Circle", color: "text-gray-400" };
+}
+
+/**
+ * Get preferred AI model from user settings
+ */
+import type { User, AIModel } from "@/types";
+
+export function getPreferredModel(user: User | null | undefined): AIModel {
+  return user?.settings?.preferredModel || "gemini-1.5-flash";
+}
+
+/**
+ * Get AI model display name
+ */
+export function getAIModelName(model: AIModel): string {
+  const names: Record<AIModel, string> = {
+    "gemini-1.5-flash": "Gemini 1.5 Flash",
+    "gemini-1.5-pro": "Gemini 1.5 Pro",
+    "gemini-2.0-flash-exp": "Gemini 2.0 Flash",
+  };
+  return names[model];
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getTrainingSystemPrompt, getConsultationSystemPrompt, getSimulationSystemPrompt } from "@/lib/gemini/prompts";
+import type { AIModel } from "@/types";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -9,7 +10,11 @@ if (!GEMINI_API_KEY) {
 }
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+// Get model by name
+function getModel(modelName: AIModel = "gemini-1.5-flash") {
+  return genAI.getGenerativeModel({ model: modelName });
+}
 
 // Timeout wrapper for async operations
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
@@ -59,7 +64,10 @@ export async function POST(request: NextRequest) {
       difficulty = 3,
       situation,
       recommendedStrategy,
+      model: modelName = "gemini-1.5-flash",
     } = body;
+
+    const model = getModel(modelName as AIModel);
 
     // Build system prompt based on mode
     let systemPrompt = "";

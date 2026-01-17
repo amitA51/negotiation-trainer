@@ -6,9 +6,11 @@ import Link from "next/link";
 import { ArrowRight, Play } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button, Card, Spinner } from "@/components/ui";
+import { SkeletonChat } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { MessageBubble, ChatInput, TypingIndicator } from "@/components/chat";
 import { getConsultation, getConsultationMessages, addConsultationMessage } from "@/lib/firebase/firestore";
+import { getPreferredModel } from "@/lib/utils";
 import type { Consultation, Message } from "@/types";
 
 interface Props {
@@ -81,6 +83,7 @@ export default function ConsultationChatPage({ params }: Props) {
           message: situation,
           history: [],
           mode: "consultation",
+          model: getPreferredModel(user),
         }),
       });
 
@@ -98,7 +101,7 @@ export default function ConsultationChatPage({ params }: Props) {
         setMessages((prev) => [...prev, aiMessage]);
       }
     } catch {
-      // Failed to get initial response - user can retry by sending a message
+      showToast("שגיאה בקבלת תשובה. שלח הודעה לניסיון נוסף.", "error");
     } finally {
       setSending(false);
     }
@@ -134,6 +137,7 @@ export default function ConsultationChatPage({ params }: Props) {
             content: m.content,
           })),
           mode: "consultation",
+          model: getPreferredModel(user),
         }),
       });
 
@@ -161,7 +165,7 @@ export default function ConsultationChatPage({ params }: Props) {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Spinner size="lg" />
+        <SkeletonChat messages={3} />
       </div>
     );
   }

@@ -25,7 +25,7 @@ export { Modal } from "./Modal";
 export { ToastProvider, useToast } from "./Toast";
 
 // Enhanced Skeleton Components
-export { 
+export {
   Skeleton as EnhancedSkeleton,
   SkeletonText,
   SkeletonCard,
@@ -65,3 +65,10 @@ export { Accordion, Tabs, Dropdown, Toggle, Tooltip } from "./Interactive";
 
 // Form Controls
 export { SearchInput, Select, Chip, RangeSlider } from "./FormControls";
+
+// Premium "Obsidian Air" Components
+export { BackgroundEffects } from "./BackgroundEffects";
+export { MagneticButton } from "./MagneticButton";
+export { SpotlightCard } from "./SpotlightCard";
+export { TextReveal } from "./TextReveal";
+export { BentoGrid, BentoGridItem } from "./BentoGrid";

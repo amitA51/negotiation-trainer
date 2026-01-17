@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Heebo } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { BackgroundEffects } from "@/components/ui/BackgroundEffects";
 
 const heebo = Heebo({
   variable: "--font-heebo",
@@ -107,6 +108,13 @@ export default function RootLayout({
         />
       </head>
       <body className={`${heebo.variable} font-sans antialiased`}>
+        <BackgroundEffects />
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-[9999] focus:top-4 focus:right-4 focus:bg-[var(--accent)] focus:text-black focus:px-4 focus:py-2 focus:rounded-lg focus:font-medium"
+        >
+          דלג לתוכן הראשי
+        </a>
         <Providers>
           {children}
         </Providers>

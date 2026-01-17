@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getAnalysisPrompt } from "@/lib/gemini/prompts";
+import type { AIModel } from "@/types";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -9,7 +10,11 @@ if (!GEMINI_API_KEY) {
 }
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+
+// Get model by name - default to Pro for analysis
+function getModel(modelName: AIModel = "gemini-1.5-pro") {
+  return genAI.getGenerativeModel({ model: modelName });
+}
 
 // Timeout wrapper for async operations
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
@@ -61,7 +66,10 @@ const DEFAULT_ANALYSIS = {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { messages, userGoal, difficulty } = body;
+    const { messages, userGoal, difficulty, model: modelName } = body;
+
+    // Use Pro for analysis by default, but allow override
+    const model = getModel(modelName as AIModel || "gemini-1.5-pro");
 
     if (!messages || messages.length === 0) {
       return NextResponse.json(

@@ -14,8 +14,11 @@ import {
   Smartphone,
   Save,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Bot
 } from "lucide-react";
+import type { AIModel } from "@/types";
+import { AI_MODELS, DEFAULT_AI_MODEL } from "@/data/constants";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button, Badge, Avatar, Modal } from "@/components/ui";
 import { signOut } from "@/lib/firebase/auth";
@@ -33,6 +36,7 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [preferredDifficulty, setPreferredDifficulty] = useState(3);
+  const [preferredModel, setPreferredModel] = useState<AIModel>(DEFAULT_AI_MODEL);
   const [linkingCode, setLinkingCode] = useState<string | null>(null);
   const [deepLink, setDeepLink] = useState<string | null>(null);
   const [generatingCode, setGeneratingCode] = useState(false);
@@ -46,6 +50,9 @@ export default function SettingsPage() {
   useEffect(() => {
     if (user?.settings?.preferredDifficulty) {
       setPreferredDifficulty(user.settings.preferredDifficulty);
+    }
+    if (user?.settings?.preferredModel) {
+      setPreferredModel(user.settings.preferredModel);
     }
   }, [user]);
 
@@ -109,7 +116,7 @@ export default function SettingsPage() {
     if (!user) return;
     setSaving(true);
     try {
-      await updateUserSettings(user.uid, { preferredDifficulty });
+      await updateUserSettings(user.uid, { preferredDifficulty, preferredModel });
       showToast("ההגדרות נשמרו", "success");
     } catch {
       showToast("שגיאה בשמירת ההגדרות", "error");
@@ -237,21 +244,27 @@ export default function SettingsPage() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-4 md:grid-cols-8 gap-2 mb-5">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((level) => (
-              <button
-                key={level}
-                onClick={() => setPreferredDifficulty(level)}
-                className={cn(
-                  "aspect-square rounded-xl flex items-center justify-center transition-colors",
-                  preferredDifficulty === level
-                    ? "bg-[var(--accent)] text-black"
-                    : "bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)]"
-                )}
-              >
-                <span className="text-lg font-bold">{level}</span>
-              </button>
-            ))}
+          <div className="grid grid-cols-4 md:grid-cols-8 gap-2 mb-5" role="radiogroup" aria-label="בחר רמת קושי">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((level) => {
+              const levelInfo = getDifficultyInfo(level);
+              return (
+                <button
+                  key={level}
+                  onClick={() => setPreferredDifficulty(level)}
+                  role="radio"
+                  aria-checked={preferredDifficulty === level}
+                  aria-label={`רמה ${level}: ${levelInfo.name}`}
+                  className={cn(
+                    "aspect-square rounded-xl flex items-center justify-center transition-colors",
+                    preferredDifficulty === level
+                      ? "bg-[var(--accent)] text-black"
+                      : "bg-[var(--bg-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-subtle)]"
+                  )}
+                >
+                  <span className="text-lg font-bold">{level}</span>
+                </button>
+              );
+            })}
           </div>
 
           <div className={cn(
@@ -263,6 +276,53 @@ export default function SettingsPage() {
             <span className="font-medium">{difficultyInfo.name}</span>
             <span className="mx-2">·</span>
             <span className="opacity-80">{difficultyInfo.description}</span>
+          </div>
+        </section>
+
+        {/* AI Model Selection */}
+        <section className="rounded-2xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] p-6 slide-up" style={{ animationDelay: "75ms" }}>
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500">
+                <Bot size={20} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-[var(--text-primary)]">מודל AI</h3>
+                <p className="text-sm text-[var(--text-muted)]">בחר את המודל שישמש לאימונים</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {AI_MODELS.map((model) => (
+              <button
+                key={model.id}
+                onClick={() => setPreferredModel(model.id)}
+                className={cn(
+                  "w-full text-right p-4 rounded-xl border transition-all",
+                  preferredModel === model.id
+                    ? "bg-purple-500/10 border-purple-500/50 text-[var(--text-primary)]"
+                    : "bg-[var(--bg-hover)] border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-[var(--border-default)]"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                      preferredModel === model.id
+                        ? "border-purple-500"
+                        : "border-[var(--text-muted)]"
+                    )}>
+                      {preferredModel === model.id && (
+                        <div className="w-2 h-2 rounded-full bg-purple-500" />
+                      )}
+                    </div>
+                    <span className="font-medium">{model.name}</span>
+                  </div>
+                </div>
+                <p className="text-sm text-[var(--text-muted)] mt-1 mr-7">{model.description}</p>
+              </button>
+            ))}
           </div>
         </section>
 

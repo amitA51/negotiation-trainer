@@ -23,7 +23,7 @@ export default function AppLayout({
             <MobileNav />
 
             {/* Main Content */}
-            <main className="lg:mr-64 min-h-screen pt-16 lg:pt-0">
+            <main id="main-content" className="lg:mr-64 min-h-screen pt-16 lg:pt-0">
               <div className="p-4 lg:p-8">
                 {children}
               </div>
