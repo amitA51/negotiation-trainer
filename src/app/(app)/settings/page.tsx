@@ -17,15 +17,21 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button, Badge, Avatar } from "@/components/ui";
+import { Button, Badge, Avatar, Modal } from "@/components/ui";
 import { signOut } from "@/lib/firebase/auth";
 import { updateUserSettings } from "@/lib/firebase/firestore";
+import { useToast } from "@/components/ui/Toast";
 import { cn, getDifficultyInfo } from "@/lib/utils";
+import { doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
+import { deleteUser } from "firebase/auth";
+import { auth } from "@/lib/firebase/config";
 
 const TELEGRAM_BOT_USERNAME = "Negotiationthebot";
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [preferredDifficulty, setPreferredDifficulty] = useState(3);
   const [linkingCode, setLinkingCode] = useState<string | null>(null);
   const [deepLink, setDeepLink] = useState<string | null>(null);
@@ -33,6 +39,9 @@ export default function SettingsPage() {
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
   const [codeExpiresIn, setCodeExpiresIn] = useState<number | null>(null);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (user?.settings?.preferredDifficulty) {
@@ -74,10 +83,10 @@ export default function SettingsPage() {
         setDeepLink(data.deepLink);
         setCodeExpiresIn(data.expiresIn);
       } else {
-        console.error("Error generating code:", data.error);
+        showToast("שגיאה ביצירת קוד חיבור", "error");
       }
-    } catch (error) {
-      console.error("Error generating code:", error);
+    } catch {
+      showToast("שגיאה ביצירת קוד חיבור", "error");
     } finally {
       setGeneratingCode(false);
     }
@@ -101,8 +110,9 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       await updateUserSettings(user.uid, { preferredDifficulty });
-    } catch (error) {
-      console.error("Error saving settings:", error);
+      showToast("ההגדרות נשמרו", "success");
+    } catch {
+      showToast("שגיאה בשמירת ההגדרות", "error");
     } finally {
       setSaving(false);
     }
@@ -110,6 +120,54 @@ export default function SettingsPage() {
 
   const handleSignOut = async () => {
     await signOut();
+  };
+
+  // Disconnect Telegram
+  const handleDisconnectTelegram = async () => {
+    if (!user) return;
+    setDisconnecting(true);
+    try {
+      const userRef = doc(db, "users", user.uid);
+      await updateDoc(userRef, {
+        telegramChatId: null,
+        telegramUserId: null,
+        telegramUsername: null,
+        telegramLinkedAt: null,
+      });
+      showToast("הטלגרם נותק בהצלחה", "success");
+      // Force page reload to update user state
+      window.location.reload();
+    } catch {
+      showToast("שגיאה בניתוק הטלגרם", "error");
+    } finally {
+      setDisconnecting(false);
+    }
+  };
+
+  // Delete account
+  const handleDeleteAccount = async () => {
+    if (!user || !auth.currentUser) return;
+    setDeleting(true);
+    try {
+      // Delete user data from Firestore
+      await deleteDoc(doc(db, "users", user.uid));
+      await deleteDoc(doc(db, "userStats", user.uid));
+      
+      // Delete Firebase Auth user
+      await deleteUser(auth.currentUser);
+      
+      showToast("החשבון נמחק בהצלחה", "success");
+    } catch (error: unknown) {
+      // Handle re-authentication requirement
+      if (error instanceof Error && error.message.includes("requires-recent-login")) {
+        showToast("נדרשת התחברות מחדש לפני מחיקת החשבון. התנתק והתחבר שוב.", "error");
+      } else {
+        showToast("שגיאה במחיקת החשבון", "error");
+      }
+    } finally {
+      setDeleting(false);
+      setShowDeleteModal(false);
+    }
   };
 
   const difficultyInfo = getDifficultyInfo(preferredDifficulty);
@@ -233,7 +291,13 @@ export default function SettingsPage() {
                   </p>
                 </div>
               </div>
-              <Button variant="ghost" className="text-red-500 hover:bg-red-500/10" icon={<Trash2 size={14} />}>
+              <Button 
+                variant="ghost" 
+                className="text-red-500 hover:bg-red-500/10" 
+                icon={<Trash2 size={14} />}
+                onClick={handleDisconnectTelegram}
+                loading={disconnecting}
+              >
                 נתק
               </Button>
             </div>
@@ -334,12 +398,44 @@ export default function SettingsPage() {
               <p className="text-sm text-[var(--text-secondary)] mb-4">
                 מחיקת החשבון היא פעולה בלתי הפיכה. כל הנתונים יימחקו לצמיתות.
               </p>
-              <Button variant="ghost" className="text-red-500 hover:bg-red-500/10 border border-red-900/30">
+              <Button 
+                variant="ghost" 
+                className="text-red-500 hover:bg-red-500/10 border border-red-900/30"
+                onClick={() => setShowDeleteModal(true)}
+              >
                 מחק חשבון
               </Button>
             </div>
           </div>
         </section>
+
+        {/* Delete Account Modal */}
+        <Modal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          title="מחיקת חשבון"
+        >
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-900/30">
+              <AlertTriangle className="text-red-500 shrink-0" size={24} />
+              <p className="text-sm text-[var(--text-secondary)]">
+                פעולה זו תמחק לצמיתות את כל הנתונים שלך כולל היסטוריית אימונים, סטטיסטיקות וייעוצים. לא ניתן לשחזר את הנתונים לאחר המחיקה.
+              </p>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+                ביטול
+              </Button>
+              <Button 
+                variant="danger" 
+                onClick={handleDeleteAccount}
+                loading={deleting}
+              >
+                מחק לצמיתות
+              </Button>
+            </div>
+          </div>
+        </Modal>
       </div>
     </div>
   );

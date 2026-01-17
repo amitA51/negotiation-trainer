@@ -2,8 +2,51 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getTrainingSystemPrompt, getConsultationSystemPrompt, getSimulationSystemPrompt } from "@/lib/gemini/prompts";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+if (!GEMINI_API_KEY) {
+  throw new Error("GEMINI_API_KEY environment variable is required");
+}
+
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+// Timeout wrapper for async operations
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error("Request timeout")), timeoutMs)
+  );
+  return Promise.race([promise, timeout]);
+}
+
+// Retry wrapper with exponential backoff
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  let lastError: Error | undefined;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      
+      // Don't retry on validation errors
+      if (error instanceof Error && error.message.includes("validation")) {
+        throw error;
+      }
+      
+      // Exponential backoff
+      if (attempt < maxRetries - 1) {
+        await new Promise(resolve => setTimeout(resolve, baseDelay * Math.pow(2, attempt)));
+      }
+    }
+  }
+  
+  throw lastError;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -65,10 +108,12 @@ export async function POST(request: NextRequest) {
 
     // If this is the first message and we have history, we already have the system prompt
     // If no history, the system prompt was the first message, so send "התחל" to start
-    let messageToSend = message;
     if (geminiHistory.length === 0) {
       // First interaction - AI should start the conversation
-      const startResult = await chat.sendMessage("התחל את השיחה");
+      const startResult = await withRetry(
+        () => withTimeout(chat.sendMessage("התחל את השיחה"), 30000),
+        3
+      );
       const startResponse = await startResult.response;
       return NextResponse.json({
         message: startResponse.text(),
@@ -76,8 +121,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Send the user's message
-    const result = await chat.sendMessage(messageToSend);
+    // Send the user's message with timeout and retry
+    const result = await withRetry(
+      () => withTimeout(chat.sendMessage(message), 30000),
+      3
+    );
     const response = await result.response;
     const responseText = response.text();
 
@@ -91,9 +139,18 @@ export async function POST(request: NextRequest) {
       isComplete,
     });
   } catch (error) {
-    console.error("Chat API error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    
+    // Return user-friendly error messages
+    if (errorMessage.includes("timeout")) {
+      return NextResponse.json(
+        { error: "הבקשה נמשכה יותר מדי זמן. נסה שוב." },
+        { status: 504 }
+      );
+    }
+    
     return NextResponse.json(
-      { error: "Failed to process chat message" },
+      { error: "שגיאה בעיבוד ההודעה. נסה שוב." },
       { status: 500 }
     );
   }

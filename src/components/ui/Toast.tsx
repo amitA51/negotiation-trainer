@@ -66,10 +66,14 @@ interface ToastContainerProps {
 }
 
 function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
-  if (toasts.length === 0) return null;
-
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 flex flex-col gap-2">
+    <div 
+      className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 flex flex-col gap-2"
+      role="region"
+      aria-label="התראות"
+      aria-live="polite"
+      aria-atomic="false"
+    >
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
       ))}
@@ -84,10 +88,10 @@ interface ToastItemProps {
 
 function ToastItem({ toast, onDismiss }: ToastItemProps) {
   const icons = {
-    success: <CheckCircle size={20} className="text-green-500" />,
-    error: <AlertCircle size={20} className="text-red-500" />,
-    warning: <AlertTriangle size={20} className="text-amber-500" />,
-    info: <Info size={20} className="text-blue-500" />,
+    success: <CheckCircle size={20} className="text-green-500" aria-hidden="true" />,
+    error: <AlertCircle size={20} className="text-red-500" aria-hidden="true" />,
+    warning: <AlertTriangle size={20} className="text-amber-500" aria-hidden="true" />,
+    info: <Info size={20} className="text-blue-500" aria-hidden="true" />,
   };
 
   const bgColors = {
@@ -97,6 +101,13 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
     info: "border-blue-500/30 bg-blue-500/10",
   };
 
+  const roleMap = {
+    success: "status",
+    error: "alert",
+    warning: "alert",
+    info: "status",
+  } as const;
+
   return (
     <div
       className={cn(
@@ -104,14 +115,17 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
         "animate-slide-up shadow-lg",
         bgColors[toast.type]
       )}
+      role={roleMap[toast.type]}
+      aria-live={toast.type === "error" || toast.type === "warning" ? "assertive" : "polite"}
     >
       {icons[toast.type]}
       <p className="flex-1 text-sm text-[var(--text-primary)]">{toast.message}</p>
       <button
         onClick={() => onDismiss(toast.id)}
         className="p-1 rounded hover:bg-white/10 transition-colors"
+        aria-label="סגור התראה"
       >
-        <X size={16} className="text-[var(--text-muted)]" />
+        <X size={16} className="text-[var(--text-muted)]" aria-hidden="true" />
       </button>
     </div>
   );

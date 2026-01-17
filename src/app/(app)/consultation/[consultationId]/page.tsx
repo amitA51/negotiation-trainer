@@ -34,15 +34,18 @@ export default function ConsultationChatPage({ params }: Props) {
       if (!user) return;
       
       try {
-        const consultationData = await getConsultation(consultationId);
+        // Fetch consultation and messages in parallel for better performance
+        const [consultationData, messagesData] = await Promise.all([
+          getConsultation(consultationId),
+          getConsultationMessages(consultationId),
+        ]);
+        
         if (!consultationData || consultationData.userId !== user.uid) {
           router.push("/consultation");
           return;
         }
         
         setConsultation(consultationData);
-        
-        const messagesData = await getConsultationMessages(consultationId);
         setMessages(messagesData);
         
         // If only one message (the initial situation), get AI response
@@ -50,8 +53,9 @@ export default function ConsultationChatPage({ params }: Props) {
           setInitialized(true);
           await getInitialResponse(consultationData.situation);
         }
-      } catch (error) {
-        console.error("Error loading consultation:", error);
+      } catch {
+        // Failed to load - redirect
+        router.push("/consultation");
       } finally {
         setLoading(false);
       }
@@ -93,8 +97,8 @@ export default function ConsultationChatPage({ params }: Props) {
         await addConsultationMessage(consultationId, { role: "ai", content: data.message });
         setMessages((prev) => [...prev, aiMessage]);
       }
-    } catch (error) {
-      console.error("Error getting initial response:", error);
+    } catch {
+      // Failed to get initial response - user can retry by sending a message
     } finally {
       setSending(false);
     }
@@ -146,8 +150,7 @@ export default function ConsultationChatPage({ params }: Props) {
         await addConsultationMessage(consultationId, { role: "ai", content: data.message });
         setMessages((prev) => [...prev, aiMessage]);
       }
-    } catch (error) {
-      console.error("Error sending message:", error);
+    } catch {
       showToast("שגיאה בשליחת ההודעה. נסה שוב.", "error");
       setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));
     } finally {

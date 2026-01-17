@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, ReactNode, useId } from "react";
+import { useEffect, useRef, ReactNode, useId, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
@@ -16,6 +16,20 @@ interface ModalProps {
   className?: string;
 }
 
+// Get all focusable elements within a container
+function getFocusableElements(container: HTMLElement): HTMLElement[] {
+  const selector = [
+    'a[href]',
+    'button:not([disabled])',
+    'textarea:not([disabled])',
+    'input:not([disabled])',
+    'select:not([disabled])',
+    '[tabindex]:not([tabindex="-1"])',
+  ].join(', ');
+  
+  return Array.from(container.querySelectorAll<HTMLElement>(selector));
+}
+
 export function Modal({
   isOpen,
   onClose,
@@ -28,26 +42,75 @@ export function Modal({
 }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const previousActiveElement = useRef<HTMLElement | null>(null);
   const titleId = useId();
   const descId = useId();
 
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
+  // Focus trap handler
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === "Escape") {
+      onClose();
+      return;
+    }
+    
+    // Handle Tab key for focus trap
+    if (e.key === "Tab" && dialogRef.current) {
+      const focusableElements = getFocusableElements(dialogRef.current);
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      
+      if (focusableElements.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      
+      if (e.shiftKey) {
+        // Shift + Tab: moving backwards
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement?.focus();
+        }
+      } else {
+        // Tab: moving forwards
+        if (document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement?.focus();
+        }
+      }
+    }
+  }, [onClose]);
 
+  useEffect(() => {
     if (isOpen) {
-      document.addEventListener("keydown", handleEscape);
+      // Store the currently focused element to restore later
+      previousActiveElement.current = document.activeElement as HTMLElement;
+      
+      document.addEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "hidden";
-      // Focus the dialog when opened
-      dialogRef.current?.focus();
+      
+      // Focus the first focusable element or the dialog itself
+      requestAnimationFrame(() => {
+        if (dialogRef.current) {
+          const focusableElements = getFocusableElements(dialogRef.current);
+          if (focusableElements.length > 0) {
+            focusableElements[0].focus();
+          } else {
+            dialogRef.current.focus();
+          }
+        }
+      });
     }
 
     return () => {
-      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
+      
+      // Restore focus to the previously focused element
+      if (previousActiveElement.current && !isOpen) {
+        previousActiveElement.current.focus();
+      }
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, handleKeyDown]);
 
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (e.target === overlayRef.current) {

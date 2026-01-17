@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface AvatarProps {
@@ -10,11 +11,11 @@ interface AvatarProps {
 }
 
 export function Avatar({ src, name, size = "md", className }: AvatarProps) {
-  const sizes = {
-    sm: "w-8 h-8 text-xs",
-    md: "w-10 h-10 text-sm",
-    lg: "w-12 h-12 text-base",
-    xl: "w-16 h-16 text-xl",
+  const sizeValues = {
+    sm: { class: "w-8 h-8 text-xs", pixels: 32 },
+    md: { class: "w-10 h-10 text-sm", pixels: 40 },
+    lg: { class: "w-12 h-12 text-base", pixels: 48 },
+    xl: { class: "w-16 h-16 text-xl", pixels: 64 },
   };
 
   const getInitials = (name: string) => {
@@ -26,18 +27,28 @@ export function Avatar({ src, name, size = "md", className }: AvatarProps) {
       .slice(0, 2);
   };
 
+  const sizeInfo = sizeValues[size];
+  const altText = name ? `תמונת פרופיל של ${name}` : "תמונת פרופיל";
+
   if (src) {
     return (
-      <img
-        src={src}
-        alt={name || "Avatar"}
+      <div
         className={cn(
-          "rounded-full object-cover",
+          "relative rounded-full overflow-hidden",
           "border-2 border-[var(--border-subtle)]",
-          sizes[size],
+          sizeInfo.class,
           className
         )}
-      />
+      >
+        <Image
+          src={src}
+          alt={altText}
+          width={sizeInfo.pixels}
+          height={sizeInfo.pixels}
+          className="object-cover w-full h-full"
+          unoptimized={src.startsWith("data:") || src.includes("googleusercontent.com")}
+        />
+      </div>
     );
   }
 
@@ -48,9 +59,11 @@ export function Avatar({ src, name, size = "md", className }: AvatarProps) {
         "bg-gradient-to-br from-[var(--accent)] to-[var(--accent-dark)]",
         "flex items-center justify-center",
         "font-semibold text-black",
-        sizes[size],
+        sizeInfo.class,
         className
       )}
+      role="img"
+      aria-label={altText}
     >
       {name ? getInitials(name) : "?"}
     </div>

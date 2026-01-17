@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, Lock, User, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { Button, Input, Card } from "@/components/ui";
-import { signInWithGoogle, signInWithEmail, signUpWithEmail } from "@/lib/firebase/auth";
+import { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword } from "@/lib/firebase/auth";
 import { cn } from "@/lib/utils";
 
 type AuthMode = "login" | "register" | "forgot";
@@ -20,6 +20,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [resetSent, setResetSent] = useState(false);
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
@@ -27,22 +28,20 @@ export default function LoginPage() {
     try {
       await signInWithGoogle();
       router.push("/dashboard");
-    } catch (err: any) {
-      console.error("Google Sign In Error:", err);
-      // Show more detailed error for debugging
-      const errorMessage = err.message || "שגיאה לא ידועה";
-      const errorCode = err.code || "unknown";
+    } catch (err: unknown) {
+      const firebaseError = err as { code?: string; message?: string };
+      const errorCode = firebaseError.code || "unknown";
       
       if (errorCode === "auth/popup-closed-by-user") {
         setError("החלון נסגר לפני סיום ההתחברות");
       } else if (errorCode === "auth/cancelled-popup-request") {
         // Ignore this error as it happens when multiple popups are triggered
       } else if (errorCode === "auth/popup-blocked") {
-        setError("הדפדפן חסם את החלון הקופץ. אנא אופשר חלונות קופצים לאתר זה.");
+        setError("הדפדפן חסם את החלון הקופץ. אנא אפשר חלונות קופצים לאתר זה.");
       } else if (errorCode === "auth/unauthorized-domain") {
          setError(`הדומיין אינו מורשה ב-Firebase (${window.location.hostname})`);
       } else {
-         setError(`שגיאה בהתחברות עם Google: ${errorMessage} (${errorCode})`);
+         setError("שגיאה בהתחברות עם Google. נסה שוב.");
       }
     } finally {
       setLoading(false);
@@ -55,6 +54,17 @@ export default function LoginPage() {
     setError(null);
 
     try {
+      if (mode === "forgot") {
+        // Handle password reset
+        if (!email.trim()) {
+          setError("נא להזין כתובת אימייל");
+          return;
+        }
+        await resetPassword(email);
+        setResetSent(true);
+        return;
+      }
+      
       if (mode === "register") {
         if (!name.trim()) {
           setError("נא להזין שם מלא");
@@ -65,16 +75,18 @@ export default function LoginPage() {
         await signInWithEmail(email, password);
       }
       router.push("/dashboard");
-    } catch (err: any) {
-      console.error(err);
-      if (err.code === "auth/user-not-found") {
+    } catch (err: unknown) {
+      const firebaseError = err as { code?: string };
+      if (firebaseError.code === "auth/user-not-found") {
         setError("משתמש לא נמצא. נסה להירשם.");
-      } else if (err.code === "auth/wrong-password") {
+      } else if (firebaseError.code === "auth/wrong-password") {
         setError("סיסמה שגויה.");
-      } else if (err.code === "auth/email-already-in-use") {
+      } else if (firebaseError.code === "auth/email-already-in-use") {
         setError("האימייל כבר רשום. נסה להתחבר.");
-      } else if (err.code === "auth/weak-password") {
+      } else if (firebaseError.code === "auth/weak-password") {
         setError("הסיסמה חלשה מדי. נדרשות לפחות 6 תווים.");
+      } else if (firebaseError.code === "auth/invalid-email") {
+        setError("כתובת אימייל לא תקינה.");
       } else {
         setError("שגיאה בהתחברות. נסה שוב.");
       }
@@ -142,6 +154,13 @@ export default function LoginPage() {
           {error && (
             <div className="mb-4 p-3 rounded-[var(--radius-md)] bg-[var(--error-subtle)] border border-red-800 text-[var(--error)] text-sm text-center animate-fade-in">
               {error}
+            </div>
+          )}
+
+          {/* Success Message for Password Reset */}
+          {resetSent && mode === "forgot" && (
+            <div className="mb-4 p-3 rounded-[var(--radius-md)] bg-green-500/10 border border-green-800 text-green-500 text-sm text-center animate-fade-in">
+              קישור לאיפוס סיסמה נשלח לאימייל שלך
             </div>
           )}
 

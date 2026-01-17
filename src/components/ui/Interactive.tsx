@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, ReactNode } from "react";
+import { useState, useCallback, useRef, ReactNode, useId, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -110,10 +110,41 @@ export function Tabs({
 }: TabsProps) {
   const [activeTab, setActiveTab] = useState(defaultTab || tabs[0]?.id);
   const tabRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const tabListId = useId();
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
     onChange?.(tabId);
+  };
+
+  // Keyboard navigation for tabs
+  const handleKeyDown = (e: React.KeyboardEvent, currentIndex: number) => {
+    const enabledTabs = tabs.filter(t => !t.disabled);
+    const currentEnabledIndex = enabledTabs.findIndex(t => t.id === tabs[currentIndex].id);
+    
+    let nextIndex = -1;
+    
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.preventDefault();
+      // RTL: ArrowRight goes to previous, ArrowLeft goes to next
+      if (e.key === "ArrowRight") {
+        nextIndex = currentEnabledIndex > 0 ? currentEnabledIndex - 1 : enabledTabs.length - 1;
+      } else {
+        nextIndex = currentEnabledIndex < enabledTabs.length - 1 ? currentEnabledIndex + 1 : 0;
+      }
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      nextIndex = 0;
+    } else if (e.key === "End") {
+      e.preventDefault();
+      nextIndex = enabledTabs.length - 1;
+    }
+    
+    if (nextIndex >= 0) {
+      const nextTab = enabledTabs[nextIndex];
+      handleTabChange(nextTab.id);
+      tabRefs.current.get(nextTab.id)?.focus();
+    }
   };
 
   const variantStyles = {
@@ -138,7 +169,7 @@ export function Tabs({
   };
 
   const styles = variantStyles[variant];
-  const activeTabContent = tabs.find((tab) => tab.id === activeTab)?.content;
+  const activeTabData = tabs.find((tab) => tab.id === activeTab);
 
   return (
     <div className={className}>
@@ -146,12 +177,15 @@ export function Tabs({
       <div
         className={cn("flex", styles.container)}
         role="tablist"
+        aria-orientation="horizontal"
       >
-        {tabs.map((tab) => (
+        {tabs.map((tab, index) => (
           <button
             key={tab.id}
+            id={`${tabListId}-tab-${tab.id}`}
             ref={(el) => { if (el) tabRefs.current.set(tab.id, el); }}
             onClick={() => !tab.disabled && handleTabChange(tab.id)}
+            onKeyDown={(e) => handleKeyDown(e, index)}
             className={cn(
               "flex items-center gap-2 transition-all duration-[var(--transition-fast)] font-medium",
               styles.tab,
@@ -161,7 +195,8 @@ export function Tabs({
             role="tab"
             aria-selected={activeTab === tab.id}
             aria-disabled={tab.disabled}
-            tabIndex={tab.disabled ? -1 : 0}
+            aria-controls={`${tabListId}-panel-${tab.id}`}
+            tabIndex={activeTab === tab.id ? 0 : -1}
           >
             {tab.icon}
             <span>{tab.label}</span>
@@ -170,8 +205,14 @@ export function Tabs({
       </div>
 
       {/* Tab Content */}
-      <div className="mt-4" role="tabpanel">
-        {activeTabContent}
+      <div 
+        id={`${tabListId}-panel-${activeTab}`}
+        className="mt-4" 
+        role="tabpanel"
+        aria-labelledby={`${tabListId}-tab-${activeTab}`}
+        tabIndex={0}
+      >
+        {activeTabData?.content}
       </div>
     </div>
   );
@@ -198,39 +239,113 @@ interface DropdownProps {
 
 export function Dropdown({ trigger, items, align = "start", className }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<Map<number, HTMLButtonElement | HTMLAnchorElement>>(new Map());
+  const dropdownId = useId();
+
+  const actionableItems = items.filter(item => !item.divider);
 
   const handleClickOutside = useCallback((e: MouseEvent) => {
     if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
       setIsOpen(false);
+      setFocusedIndex(-1);
     }
   }, []);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (!isOpen) return;
+    
     if (e.key === "Escape") {
       setIsOpen(false);
+      setFocusedIndex(-1);
+      return;
     }
-  }, []);
+    
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setFocusedIndex(prev => {
+        const next = prev + 1;
+        return next >= actionableItems.length ? 0 : next;
+      });
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setFocusedIndex(prev => {
+        const next = prev - 1;
+        return next < 0 ? actionableItems.length - 1 : next;
+      });
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      setFocusedIndex(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      setFocusedIndex(actionableItems.length - 1);
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      if (focusedIndex >= 0) {
+        const item = actionableItems[focusedIndex];
+        if (!item.disabled) {
+          item.onClick?.();
+          setIsOpen(false);
+          setFocusedIndex(-1);
+        }
+      }
+    }
+  }, [isOpen, focusedIndex, actionableItems]);
 
-  useState(() => {
+  // Focus the item when focusedIndex changes
+  useEffect(() => {
+    if (focusedIndex >= 0) {
+      itemRefs.current.get(focusedIndex)?.focus();
+    }
+  }, [focusedIndex]);
+
+  useEffect(() => {
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
       document.addEventListener("keydown", handleKeyDown);
+      // Focus first item when opening with keyboard
+      setFocusedIndex(0);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  });
+  }, [isOpen, handleClickOutside, handleKeyDown]);
+
+  const handleTriggerKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
+      e.preventDefault();
+      setIsOpen(true);
+    }
+  };
 
   return (
     <div ref={dropdownRef} className={cn("relative", className)}>
       {/* Trigger */}
-      <div onClick={() => setIsOpen(!isOpen)}>{trigger}</div>
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={handleTriggerKeyDown}
+        role="button"
+        tabIndex={0}
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        aria-controls={dropdownId}
+      >
+        {trigger}
+      </div>
 
       {/* Menu */}
       {isOpen && (
         <div
+          ref={menuRef}
+          id={dropdownId}
+          role="menu"
+          aria-orientation="vertical"
           className={cn(
             "absolute top-full mt-2 min-w-[200px] py-2",
             "bg-[var(--bg-elevated)] border border-[var(--border-default)]",
@@ -239,63 +354,75 @@ export function Dropdown({ trigger, items, align = "start", className }: Dropdow
             align === "end" ? "left-0" : "right-0"
           )}
         >
-          {items.map((item) => {
-            if (item.divider) {
-              return (
-                <div
-                  key={item.id}
-                  className="my-2 border-t border-[var(--border-subtle)]"
-                />
+          {(() => {
+            let actionableIndex = 0;
+            return items.map((item) => {
+              if (item.divider) {
+                return (
+                  <div
+                    key={item.id}
+                    role="separator"
+                    className="my-2 border-t border-[var(--border-subtle)]"
+                  />
+                );
+              }
+
+              const currentIndex = actionableIndex++;
+              const itemContent = (
+                <>
+                  {item.icon && (
+                    <span className="shrink-0 w-5" aria-hidden="true">{item.icon}</span>
+                  )}
+                  <span>{item.label}</span>
+                </>
               );
-            }
 
-            const itemContent = (
-              <>
-                {item.icon && (
-                  <span className="shrink-0 w-5">{item.icon}</span>
-                )}
-                <span>{item.label}</span>
-              </>
-            );
+              const itemClass = cn(
+                "w-full flex items-center gap-3 px-4 py-2 text-right transition-colors outline-none",
+                item.disabled
+                  ? "opacity-50 cursor-not-allowed"
+                  : item.danger
+                  ? "text-[var(--error)] hover:bg-[var(--error-subtle)] focus:bg-[var(--error-subtle)]"
+                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] focus:bg-[var(--bg-hover)] focus:text-[var(--text-primary)]"
+              );
 
-            const itemClass = cn(
-              "w-full flex items-center gap-3 px-4 py-2 text-right transition-colors",
-              item.disabled
-                ? "opacity-50 cursor-not-allowed"
-                : item.danger
-                ? "text-[var(--error)] hover:bg-[var(--error-subtle)]"
-                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]"
-            );
+              if (item.href && !item.disabled) {
+                return (
+                  <a
+                    key={item.id}
+                    ref={(el) => { if (el) itemRefs.current.set(currentIndex, el); }}
+                    href={item.href}
+                    className={itemClass}
+                    role="menuitem"
+                    tabIndex={-1}
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {itemContent}
+                  </a>
+                );
+              }
 
-            if (item.href && !item.disabled) {
               return (
-                <a
+                <button
                   key={item.id}
-                  href={item.href}
+                  ref={(el) => { if (el) itemRefs.current.set(currentIndex, el); }}
+                  onClick={() => {
+                    if (!item.disabled) {
+                      item.onClick?.();
+                      setIsOpen(false);
+                    }
+                  }}
                   className={itemClass}
-                  onClick={() => setIsOpen(false)}
+                  role="menuitem"
+                  tabIndex={-1}
+                  disabled={item.disabled}
+                  aria-disabled={item.disabled}
                 >
                   {itemContent}
-                </a>
+                </button>
               );
-            }
-
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  if (!item.disabled) {
-                    item.onClick?.();
-                    setIsOpen(false);
-                  }
-                }}
-                className={itemClass}
-                disabled={item.disabled}
-              >
-                {itemContent}
-              </button>
-            );
-          })}
+            });
+          })()}
         </div>
       )}
     </div>

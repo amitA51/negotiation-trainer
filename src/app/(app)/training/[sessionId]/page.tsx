@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, use } from "react";
 import { useRouter } from "next/navigation";
-import { Pause, StopCircle, Info, ChevronDown } from "lucide-react";
+import { Pause, StopCircle, Info } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button, Card, Badge, Spinner } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
@@ -35,15 +35,18 @@ export default function TrainingSessionPage({ params }: Props) {
       if (!user) return;
       
       try {
-        const sessionData = await getSession(sessionId);
+        // Fetch session and messages in parallel for better performance
+        const [sessionData, messagesData] = await Promise.all([
+          getSession(sessionId),
+          getMessages(sessionId),
+        ]);
+        
         if (!sessionData || sessionData.userId !== user.uid) {
           router.push("/training");
           return;
         }
         
         setSession(sessionData);
-        
-        const messagesData = await getMessages(sessionId);
         setMessages(messagesData);
         
         // If no messages, initialize the conversation
@@ -51,8 +54,9 @@ export default function TrainingSessionPage({ params }: Props) {
           setInitialized(true);
           await initializeConversation(sessionData);
         }
-      } catch (error) {
-        console.error("Error loading session:", error);
+      } catch {
+        // Session load failed - redirect to training page
+        router.push("/training");
       } finally {
         setLoading(false);
       }
@@ -94,8 +98,8 @@ export default function TrainingSessionPage({ params }: Props) {
         await addMessage(sessionId, aiMessage);
         setMessages([{ ...aiMessage, id: Date.now().toString(), timestamp: new Date() }]);
       }
-    } catch (error) {
-      console.error("Error initializing conversation:", error);
+    } catch {
+      // Initialization failed - will retry on page refresh
     } finally {
       setSending(false);
     }
@@ -154,8 +158,7 @@ export default function TrainingSessionPage({ params }: Props) {
           await handleEnd();
         }
       }
-    } catch (error) {
-      console.error("Error sending message:", error);
+    } catch {
       showToast("שגיאה בשליחת ההודעה. נסה שוב.", "error");
       // Remove the optimistic message on error
       setMessages((prev) => prev.filter((m) => m.id !== userMessage.id));

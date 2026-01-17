@@ -4,6 +4,47 @@ import { getFirestore, Firestore } from 'firebase-admin/firestore';
 let adminApp: App;
 let adminDb: Firestore;
 
+/**
+ * Parse the private key from environment variable
+ * Handles multiple formats:
+ * 1. JSON escaped (\\n) - from copying JSON value
+ * 2. Literal newlines - from multi-line paste
+ * 3. Base64 encoded - alternative format
+ */
+function parsePrivateKey(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  
+  let key = raw.trim();
+  
+  // Remove surrounding quotes if present
+  if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+    key = key.slice(1, -1);
+  }
+  
+  // Check if it's Base64 encoded (no BEGIN marker)
+  if (!key.includes('-----BEGIN') && key.length > 100) {
+    try {
+      const decoded = Buffer.from(key, 'base64').toString('utf-8');
+      if (decoded.includes('-----BEGIN')) {
+        key = decoded;
+      }
+    } catch {
+      // Not base64, continue with normal processing
+    }
+  }
+  
+  // Replace escaped newlines with actual newlines
+  // Handle both \\n (JSON escaped) and literal \n
+  key = key.replace(/\\n/g, '\n');
+  
+  // Validate the key format
+  if (!key.includes('-----BEGIN PRIVATE KEY-----') || !key.includes('-----END PRIVATE KEY-----')) {
+    throw new Error('Invalid private key format - must contain BEGIN/END PRIVATE KEY markers');
+  }
+  
+  return key;
+}
+
 function getAdminApp(): App {
   if (adminApp) {
     return adminApp;
@@ -16,39 +57,14 @@ function getAdminApp(): App {
     return adminApp;
   }
   
-  // Trim all values to remove any whitespace/newlines that may have been added
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID?.trim();
   const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL?.trim();
   
-  // Handle private key - support both formats:
-  // 1. Actual newlines (from JSON file paste)
-  // 2. Escaped \n characters (from single-line paste)
-  let privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY;
-  if (privateKey) {
-    // Log first 50 chars for debugging (safe - doesn't expose key)
-    console.log('[Firebase Admin] Private key starts with:', privateKey.substring(0, 50));
-    console.log('[Firebase Admin] Private key length:', privateKey.length);
-    
-    // Trim whitespace
-    privateKey = privateKey.trim();
-    
-    // Replace literal \n strings with actual newlines
-    if (privateKey.includes('\\n')) {
-      console.log('[Firebase Admin] Found escaped newlines, replacing...');
-      privateKey = privateKey.split('\\n').join('\n');
-    }
-    
-    // Log result
-    console.log('[Firebase Admin] After processing, starts with:', privateKey.substring(0, 30));
-    console.log('[Firebase Admin] Contains newlines:', privateKey.includes('\n'));
-  } else {
-    console.log('[Firebase Admin] No private key found!');
-  }
-  
   try {
+    const privateKey = parsePrivateKey(process.env.FIREBASE_ADMIN_PRIVATE_KEY);
+    
     if (clientEmail && privateKey) {
       // Use service account credentials
-      console.log('[Firebase Admin] Initializing with service account');
       adminApp = initializeApp({
         credential: cert({
           projectId,
@@ -58,7 +74,6 @@ function getAdminApp(): App {
       });
     } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
       // Use Application Default Credentials
-      console.log('[Firebase Admin] Initializing with ADC');
       adminApp = initializeApp({
         credential: applicationDefault(),
         projectId,
@@ -66,14 +81,14 @@ function getAdminApp(): App {
     } else {
       // Fallback: Initialize with just project ID
       // This will only work in Google Cloud environment
-      console.log('[Firebase Admin] Initializing with project ID only');
       adminApp = initializeApp({
         projectId,
       });
     }
-  } catch (error: any) {
-    console.error('[Firebase Admin] Initialization error:', error.message);
-    throw error;
+  } catch (error) {
+    // Re-throw with more context
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Firebase Admin initialization failed: ${message}`);
   }
   
   return adminApp;

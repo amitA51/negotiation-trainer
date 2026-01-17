@@ -14,19 +14,9 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID?.trim(),
 };
 
-// Debug config availability
-if (typeof window !== "undefined") {
-  if (!firebaseConfig.apiKey) {
-    console.error("Firebase config is missing! Check your environment variables.");
-  } else {
-    console.log("Firebase config loaded for project:", firebaseConfig.projectId);
-    console.log("API Key Check:", {
-      length: firebaseConfig.apiKey.length,
-      start: firebaseConfig.apiKey.substring(0, 5),
-      end: firebaseConfig.apiKey.substring(firebaseConfig.apiKey.length - 5),
-      hasWhitespace: /\s/.test(firebaseConfig.apiKey)
-    });
-  }
+// Validate config on client-side (no logging in production)
+if (typeof window !== "undefined" && !firebaseConfig.apiKey && process.env.NODE_ENV === "development") {
+  console.error("Firebase config is missing! Check your environment variables.");
 }
 
 // Initialize Firebase
