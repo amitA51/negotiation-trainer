@@ -11,20 +11,24 @@ import {
   BookOpen,
   Award,
   Flame,
+  Trophy,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button, Badge, AnimatedCounter, SkeletonStats } from "@/components/ui";
 import { useDashboardData } from "@/lib/hooks/useSWR";
+import { useAchievements } from "@/lib/hooks/useAchievements";
 import { formatRelativeTime } from "@/lib/utils";
 import { BentoGrid, BentoGridItem } from "@/components/ui/BentoGrid";
 import { TextReveal } from "@/components/ui/TextReveal";
 import { MagneticButton } from "@/components/ui/MagneticButton";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
+import { AchievementShowcase } from "@/components/achievements";
 import { DAILY_TIPS_DETAILED } from "@/data/tips";
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const { stats, activeSession, loading } = useDashboardData(user?.uid);
+  const { achievements, stats: achievementStats, isLoading: achievementsLoading } = useAchievements();
 
   // Get daily tip based on day of year
   const dailyTip = useMemo(() => {
@@ -189,6 +193,17 @@ export default function DashboardPage() {
         </div>
 
       </BentoGrid>
+
+      {/* Achievements Section */}
+      {!achievementsLoading && achievements.length > 0 && (
+        <section className="mt-8">
+          <AchievementShowcase
+            achievements={achievements}
+            maxDisplay={6}
+            onViewAll={() => window.location.href = "/achievements"}
+          />
+        </section>
+      )}
 
       {/* Footer Links */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">

@@ -14,6 +14,7 @@ import {
   BarChart3,
   Settings,
   LogOut,
+  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/training", label: "אימון", icon: Target },
   { href: "/consultation", label: "ייעוץ", icon: MessageSquare },
   { href: "/techniques", label: "טכניקות", icon: BookOpen },
+  { href: "/achievements", label: "הישגים", icon: Trophy },
   { href: "/history", label: "היסטוריה", icon: History },
   { href: "/stats", label: "סטטיסטיקות", icon: BarChart3 },
   { href: "/settings", label: "הגדרות", icon: Settings },

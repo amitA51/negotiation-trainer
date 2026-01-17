@@ -12,6 +12,9 @@ export * from "./useSWR";
 // Export Real-time hooks (NEW - for better performance)
 export * from "./useFirebaseRealtime";
 
+// Export Achievements hooks
+export * from "./useAchievements";
+
 // ==========================================
 // UTILITY HOOKS
 // ==========================================
