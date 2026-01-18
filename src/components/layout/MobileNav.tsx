@@ -56,8 +56,10 @@ export function MobileNav() {
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="p-2 rounded-[var(--radius-md)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-colors"
+          aria-label={isOpen ? "סגור תפריט" : "פתח תפריט"}
+          aria-expanded={isOpen}
         >
-          {isOpen ? <X size={24} /> : <Menu size={24} />}
+          {isOpen ? <X size={24} aria-hidden="true" /> : <Menu size={24} aria-hidden="true" />}
         </button>
       </header>
 

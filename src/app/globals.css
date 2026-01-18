@@ -36,9 +36,10 @@
   --text-primary: #FAFAFA;
   --text-secondary: #9CA3AF;
   /* Cool Gray */
-  --text-muted: #52525B;
-  /* Zinc 600 */
-  --text-disabled: #3F3F46;
+  --text-muted: #71717A;
+  /* Zinc 500 - improved contrast (4.72:1 on #050508) */
+  --text-disabled: #52525B;
+  /* Zinc 600 - improved from 3F3F46 */
 
   /* SPACING & RADIUS */
   --radius-sm: 8px;

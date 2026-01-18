@@ -41,6 +41,14 @@ export default function AppLayout({
       <AuthGuard>
         <ToastProvider>
           <div className="min-h-screen bg-[var(--bg-primary)]">
+            {/* Skip to main content link for accessibility */}
+            <a 
+              href="#main-content" 
+              className="skip-link"
+            >
+              דלג לתוכן הראשי
+            </a>
+
             {/* Desktop Sidebar */}
             <div className="hidden lg:block">
               <Suspense fallback={<div className="w-64 h-screen bg-[var(--bg-secondary)]" />}>

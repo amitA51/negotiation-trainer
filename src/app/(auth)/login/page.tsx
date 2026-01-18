@@ -251,8 +251,9 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute left-3 top-[38px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
+                  aria-label={showPassword ? "הסתר סיסמה" : "הצג סיסמה"}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
                 </button>
               </div>
             )}

@@ -96,8 +96,9 @@ export function SearchInput({
               inputRef.current?.focus();
             }}
             className="absolute left-3 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
+            aria-label="נקה חיפוש"
           >
-            <X size={16} />
+            <X size={16} aria-hidden="true" />
           </button>
         )}
       </div>
