@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getAnalysisPrompt } from "@/lib/gemini/prompts";
 import { AnalyzeRequestSchema, type AnalyzeRequest } from "@/lib/validation/schemas";
 import { checkRateLimit, handleAPIError, withTimeout, withRetry } from "@/lib/utils/api-helpers";
+import { analysisCache, createAnalysisCacheKey, getOrCompute } from "@/lib/llm/cache";
 import type { AIModel } from "@/types";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -18,8 +19,19 @@ function getModel(modelName: AIModel = "gemini-1.5-pro") {
   return genAI.getGenerativeModel({ model: modelName });
 }
 
+/** Analysis result type */
+interface AnalysisResult {
+  score: number;
+  techniquesUsed: string[];
+  strengths: string[];
+  improvements: string[];
+  recommendations: string[];
+  dealSummary: string;
+  cached?: boolean;
+}
+
 /** Default analysis for fallback scenarios */
-const DEFAULT_ANALYSIS = {
+const DEFAULT_ANALYSIS: AnalysisResult = {
   score: 50,
   techniquesUsed: [],
   strengths: ["ניהלת שיחה"],
@@ -31,6 +43,7 @@ const DEFAULT_ANALYSIS = {
 /**
  * POST /api/analyze
  * Analyzes a negotiation session and provides feedback
+ * Supports caching for repeated analyses
  */
 export async function POST(request: NextRequest) {
   try {
@@ -58,10 +71,7 @@ export async function POST(request: NextRequest) {
 
     const { messages, userGoal, difficulty, model: modelName } = validatedBody;
 
-    // 3. Get the appropriate model
-    const model = getModel(modelName ?? "gemini-1.5-pro");
-
-    // 4. Check minimum messages
+    // 3. Check minimum messages
     if (!messages || messages.length === 0) {
       return NextResponse.json(
         { error: "No messages to analyze" },
@@ -69,42 +79,59 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 5. Format conversation for analysis
-    const conversation = messages
-      .filter((m) => m.role !== "system")
-      .map((m) => `${m.role === "user" ? "משתמש" : "יריב"}: ${m.content}`)
-      .join("\n");
+    // 4. Create cache key
+    const cacheKey = createAnalysisCacheKey({
+      messages: messages.map(m => ({ role: m.role, content: m.content })),
+      difficulty,
+    });
 
-    const prompt = getAnalysisPrompt(conversation, userGoal ?? "לנהל משא ומתן מוצלח", difficulty ?? 3);
+    // 5. Get from cache or compute
+    const analysis = await getOrCompute(
+      analysisCache,
+      cacheKey,
+      async () => {
+        // Get the appropriate model
+        const model = getModel(modelName ?? "gemini-1.5-pro");
 
-    // 6. Call Gemini with timeout and retry
-    const result = await withRetry(
-      () => withTimeout(model.generateContent(prompt), 60000, "Analysis request timed out"),
-      { maxAttempts: 3, initialDelay: 1000 }
+        // Format conversation for analysis
+        const conversation = messages
+          .filter((m) => m.role !== "system")
+          .map((m) => `${m.role === "user" ? "משתמש" : "יריב"}: ${m.content}`)
+          .join("\n");
+
+        const prompt = getAnalysisPrompt(conversation, userGoal ?? "לנהל משא ומתן מוצלח", difficulty ?? 3);
+
+        // Call Gemini with timeout and retry
+        const result = await withRetry(
+          () => withTimeout(model.generateContent(prompt), 60000, "Analysis request timed out"),
+          { maxAttempts: 3, initialDelay: 1000 }
+        );
+        
+        const response = await result.response;
+        const text = response.text();
+
+        // Extract JSON from response
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          throw new Error("No JSON found in response");
+        }
+
+        const rawAnalysis = JSON.parse(jsonMatch[0]);
+
+        // Validate and normalize the response
+        return {
+          score: Math.max(0, Math.min(100, rawAnalysis.score || 0)),
+          techniquesUsed: Array.isArray(rawAnalysis.techniquesUsed) ? rawAnalysis.techniquesUsed : [],
+          strengths: Array.isArray(rawAnalysis.strengths) ? rawAnalysis.strengths : [],
+          improvements: Array.isArray(rawAnalysis.improvements) ? rawAnalysis.improvements : [],
+          recommendations: Array.isArray(rawAnalysis.recommendations) ? rawAnalysis.recommendations : [],
+          dealSummary: typeof rawAnalysis.dealSummary === 'string' ? rawAnalysis.dealSummary : "לא הושגה עסקה",
+        };
+      },
+      60 * 60 * 1000 // Cache for 1 hour
     );
-    
-    const response = await result.response;
-    const text = response.text();
 
-    // 7. Extract JSON from response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error("No JSON found in response");
-    }
-
-    const analysis = JSON.parse(jsonMatch[0]);
-
-    // 8. Validate and normalize the response
-    const normalizedAnalysis = {
-      score: Math.max(0, Math.min(100, analysis.score || 0)),
-      techniquesUsed: Array.isArray(analysis.techniquesUsed) ? analysis.techniquesUsed : [],
-      strengths: Array.isArray(analysis.strengths) ? analysis.strengths : [],
-      improvements: Array.isArray(analysis.improvements) ? analysis.improvements : [],
-      recommendations: Array.isArray(analysis.recommendations) ? analysis.recommendations : [],
-      dealSummary: typeof analysis.dealSummary === 'string' ? analysis.dealSummary : "לא הושגה עסקה",
-    };
-
-    return NextResponse.json(normalizedAnalysis);
+    return NextResponse.json(analysis);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
 

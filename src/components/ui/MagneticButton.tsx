@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useRef, useState } from "react";
-import { motion, useSpring, useTransform, useMotionValue } from "framer-motion";
+import React, { useRef } from "react";
+import { motion, useSpring, useTransform, type HTMLMotionProps } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-interface MagneticButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface MagneticButtonProps extends Omit<HTMLMotionProps<"button">, "children"> {
     children: React.ReactNode;
     strength?: number; // How strong the pull is (default 0.5)
     variant?: "primary" | "secondary" | "ghost" | "glass";
@@ -26,8 +26,9 @@ export const MagneticButton = ({
     const y = useSpring(0, { stiffness: 150, damping: 15, mass: 0.1 });
 
     const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+        if (!ref.current) return;
         const { clientX, clientY } = e;
-        const { left, top, width, height } = ref.current!.getBoundingClientRect();
+        const { left, top, width, height } = ref.current.getBoundingClientRect();
 
         const centerX = left + width / 2;
         const centerY = top + height / 2;
@@ -71,7 +72,7 @@ export const MagneticButton = ({
             )}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            {...(props as any)}
+            {...props}
         >
             <span className="relative z-10 flex items-center gap-2 pointer-events-none">
                 {children}

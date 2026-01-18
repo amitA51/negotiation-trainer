@@ -8,6 +8,9 @@
 
 import * as Sentry from '@sentry/nextjs';
 
+/** Metadata type for Sentry tracking */
+type TrackingMetadata = Record<string, string | number | boolean | undefined>;
+
 /**
  * Track error with additional context
  */
@@ -17,7 +20,7 @@ export function trackError(
     userId?: string;
     sessionId?: string;
     action?: string;
-    metadata?: Record<string, any>;
+    metadata?: TrackingMetadata;
   }
 ) {
   Sentry.captureException(error, {
@@ -40,7 +43,7 @@ export function trackError(
  */
 export function trackEvent(
   eventName: string,
-  data?: Record<string, any>,
+  data?: TrackingMetadata,
   level: 'info' | 'warning' | 'error' = 'info'
 ) {
   Sentry.captureMessage(eventName, {
@@ -59,7 +62,7 @@ export function trackAPIError(
   endpoint: string,
   method: string,
   statusCode?: number,
-  additionalData?: Record<string, any>
+  additionalData?: TrackingMetadata
 ) {
   Sentry.captureException(error, {
     tags: {
@@ -81,11 +84,11 @@ export function trackAPIError(
 /**
  * Track performance transaction
  */
-export function trackTransaction(
+export function trackTransaction<T>(
   name: string,
   operation: string,
-  callback: () => Promise<any> | any
-) {
+  callback: () => Promise<T> | T
+): Promise<T> | T {
   return Sentry.startSpan(
     {
       name,
@@ -125,7 +128,7 @@ export function clearUserContext() {
 export function addBreadcrumb(
   message: string,
   category: string,
-  data?: Record<string, any>,
+  data?: TrackingMetadata,
   level: 'info' | 'warning' | 'error' = 'info'
 ) {
   Sentry.addBreadcrumb({
@@ -177,7 +180,7 @@ export function trackSessionLifecycle(
  */
 export function trackValidationError(
   field: string,
-  value: any,
+  value: unknown,
   expectedType: string
 ) {
   trackEvent('validation_error', {
@@ -208,7 +211,7 @@ export function trackRateLimitHit(
 export function trackFirebaseError(
   operation: string,
   error: Error,
-  metadata?: Record<string, any>
+  metadata?: TrackingMetadata
 ) {
   trackError(error, {
     action: `firebase_${operation}`,

@@ -29,7 +29,7 @@ import { trackEvent } from '@/lib/utils/sentry';
 export async function initializeUserAchievements(userId: string): Promise<void> {
   const achievementsRef = doc(db, 'userAchievements', userId);
   
-  const initialAchievements: Record<string, any> = {};
+  const initialAchievements: Record<string, { unlocked: boolean; progress: number }> = {};
   ACHIEVEMENTS.forEach((achievement) => {
     initialAchievements[achievement.id] = {
       unlocked: false,

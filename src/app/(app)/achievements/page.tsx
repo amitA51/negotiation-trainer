@@ -130,7 +130,7 @@ export default function AchievementsPage() {
                     <div key={rarity} className="flex items-center gap-3">
                       <div className={`w-3 h-3 rounded-full ${colors[rarity]}`} />
                       <span className="text-sm text-[var(--text-secondary)] flex-1">
-                        {getRarityLabelHe(rarity as any)}
+                        {getRarityLabelHe(rarity as 'common' | 'rare' | 'epic' | 'legendary')}
                       </span>
                       <span className="text-sm font-medium text-[var(--text-primary)]">
                         {count}/{total}

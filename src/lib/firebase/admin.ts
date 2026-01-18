@@ -4,6 +4,9 @@ import { getFirestore, Firestore } from 'firebase-admin/firestore';
 let adminApp: App;
 let adminDb: Firestore;
 
+// Only log in development
+const isDev = process.env.NODE_ENV === 'development';
+
 /**
  * Parse the private key from environment variable
  * Handles multiple formats:
@@ -20,14 +23,13 @@ function getCredentials(): { projectId: string; clientEmail: string; privateKey:
   if (serviceAccountJson) {
     try {
       const parsed = JSON.parse(serviceAccountJson);
-      console.log('[Firebase Admin] Using FIREBASE_SERVICE_ACCOUNT');
       return {
         projectId: parsed.project_id || projectId || '',
         clientEmail: parsed.client_email,
         privateKey: parsed.private_key,
       };
-    } catch (e) {
-      console.error('[Firebase Admin] Failed to parse FIREBASE_SERVICE_ACCOUNT:', e);
+    } catch {
+      console.error('[Firebase Admin] Failed to parse FIREBASE_SERVICE_ACCOUNT');
     }
   }
   
@@ -36,25 +38,20 @@ function getCredentials(): { projectId: string; clientEmail: string; privateKey:
   const rawPrivateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY;
   
   if (!clientEmail) {
-    console.error('[Firebase Admin] FIREBASE_ADMIN_CLIENT_EMAIL is not set');
+    if (isDev) console.error('[Firebase Admin] FIREBASE_ADMIN_CLIENT_EMAIL is not set');
     return null;
   }
   
   if (!rawPrivateKey) {
-    console.error('[Firebase Admin] FIREBASE_ADMIN_PRIVATE_KEY is not set');
+    if (isDev) console.error('[Firebase Admin] FIREBASE_ADMIN_PRIVATE_KEY is not set');
     return null;
   }
   
   let key = rawPrivateKey.trim();
   
-  // Log first 50 chars for debugging (safe - doesn't expose the key)
-  console.log('[Firebase Admin] Private key starts with:', key.substring(0, 50));
-  console.log('[Firebase Admin] Private key length:', key.length);
-  
   // Remove surrounding quotes if present
   if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
     key = key.slice(1, -1);
-    console.log('[Firebase Admin] Removed surrounding quotes');
   }
   
   // Check if it's Base64 encoded (no BEGIN marker)
@@ -63,7 +60,6 @@ function getCredentials(): { projectId: string; clientEmail: string; privateKey:
       const decoded = Buffer.from(key, 'base64').toString('utf-8');
       if (decoded.includes('-----BEGIN')) {
         key = decoded;
-        console.log('[Firebase Admin] Decoded from Base64');
       }
     } catch {
       // Not base64, continue with normal processing
@@ -75,16 +71,15 @@ function getCredentials(): { projectId: string; clientEmail: string; privateKey:
   
   // Validate the key format
   if (!key.includes('-----BEGIN PRIVATE KEY-----')) {
-    console.error('[Firebase Admin] Key missing BEGIN marker');
+    if (isDev) console.error('[Firebase Admin] Key missing BEGIN marker');
     return null;
   }
   
   if (!key.includes('-----END PRIVATE KEY-----')) {
-    console.error('[Firebase Admin] Key missing END marker');
+    if (isDev) console.error('[Firebase Admin] Key missing END marker');
     return null;
   }
   
-  console.log('[Firebase Admin] Private key parsed successfully');
   return {
     projectId: projectId || '',
     clientEmail,
@@ -111,7 +106,6 @@ function getAdminApp(): App {
     
     if (credentials) {
       // Use service account credentials
-      console.log('[Firebase Admin] Initializing with service account:', credentials.clientEmail);
       adminApp = initializeApp({
         credential: cert({
           projectId: credentials.projectId,
@@ -121,7 +115,6 @@ function getAdminApp(): App {
       });
     } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
       // Use Application Default Credentials
-      console.log('[Firebase Admin] Initializing with Application Default Credentials');
       adminApp = initializeApp({
         credential: applicationDefault(),
         projectId,
