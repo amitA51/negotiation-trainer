@@ -20,16 +20,64 @@ if (!GEMINI_API_KEY) {
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-// Get model by name
+/** Get model by name */
 function getModel(modelName: AIModel = "gemini-2.5-flash") {
   return genAI.getGenerativeModel({ model: modelName });
 }
 
+/** Check if request prefers streaming response */
+function prefersStreaming(request: NextRequest): boolean {
+  const acceptHeader = request.headers.get('accept') || '';
+  return acceptHeader.includes('text/event-stream');
+}
+
+/** Create a streaming response from Gemini */
+async function createStreamingResponse(
+  chat: ReturnType<ReturnType<typeof genAI.getGenerativeModel>['startChat']>,
+  message: string
+): Promise<Response> {
+  const encoder = new TextEncoder();
+  
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        const result = await chat.sendMessageStream(message);
+        
+        for await (const chunk of result.stream) {
+          const text = chunk.text();
+          if (text) {
+            // SSE format
+            const data = `data: ${JSON.stringify({ text, done: false })}\n\n`;
+            controller.enqueue(encoder.encode(data));
+          }
+        }
+        
+        // Send completion signal
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: '', done: true })}\n\n`));
+        controller.close();
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Stream error';
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: errorMessage, done: true })}\n\n`));
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  });
+}
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
+  const useStreaming = prefersStreaming(request);
   
   try {
-    // 🛡️ Rate Limiting - 20 requests per minute per IP
+    // Rate Limiting - 20 requests per minute per IP
     const rateLimitResponse = await checkRateLimit(request, {
       uniqueTokenPerInterval: 20,
       interval: 60000, // 1 minute
@@ -47,7 +95,7 @@ export async function POST(request: NextRequest) {
       json: async () => rawBody,
     } as Request;
 
-    // 🛡️ Validate Request Body
+    // Validate Request Body
     const validatedData = await validateRequest(validationRequest, ChatRequestSchema);
     
     const {
@@ -56,7 +104,6 @@ export async function POST(request: NextRequest) {
       mode = "training",
       difficulty = 3,
       model: modelName = "gemini-2.5-flash",
-      scenarioId,
     } = validatedData;
 
     const model = getModel(modelName as AIModel);
@@ -111,10 +158,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // If this is the first message and we have history, we already have the system prompt
-    // If no history, the system prompt was the first message, so send "התחל" to start
+    // First interaction - AI should start the conversation
     if (geminiHistory.length === 0 || !message) {
-      // First interaction - AI should start the conversation
+      if (useStreaming) {
+        return createStreamingResponse(chat, "התחל את השיחה");
+      }
+      
       const startResult = await withRetry(
         () => withTimeout(chat.sendMessage("התחל את השיחה"), 30000),
         { maxAttempts: 3, initialDelay: 1000 }
@@ -130,7 +179,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Send the user's message with timeout and retry
+    // Streaming response
+    if (useStreaming) {
+      return createStreamingResponse(chat, message);
+    }
+
+    // Non-streaming response (default)
     const result = await withRetry(
       () => withTimeout(chat.sendMessage(message), 30000),
       { maxAttempts: 3, initialDelay: 1000 }

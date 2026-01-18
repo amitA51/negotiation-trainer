@@ -27,6 +27,17 @@ export const AIModelSchema = z.enum([
   'gemini-2.5-flash',
 ]);
 
+export const ScenarioCategorySchema = z.enum(['salary', 'business', 'bargaining', 'everyday']);
+
+export const ScenarioSchema = z.object({
+  title: z.string().max(200),
+  description: z.string().max(2000),
+  userRole: z.string().max(200),
+  aiRole: z.string().max(200),
+  goal: z.string().max(500),
+  category: ScenarioCategorySchema.optional(),
+}).partial(); // All fields optional for flexibility
+
 // ==========================================
 // /api/chat - Chat Endpoint
 // ==========================================
@@ -54,7 +65,7 @@ export const ChatRequestSchema = z.object({
   
   consultationId: z.string().optional(), // UUID validation removed
   
-  scenario: z.any().optional(), // For backward compatibility
+  scenario: ScenarioSchema.optional(), // Typed scenario object
   
   situation: z.string().optional(), // For simulation mode
   
@@ -83,16 +94,18 @@ export type ChatRequest = z.infer<typeof ChatRequestSchema>;
 export const AnalyzeRequestSchema = z.object({
   messages: z
     .array(MessageSchema)
-    .min(2, 'Need at least 2 messages to analyze')
+    .min(1, 'Need at least 1 message to analyze')
     .max(200, 'Too many messages to analyze'),
   
-  sessionId: z.string().uuid('Invalid session ID'),
+  userGoal: z.string().max(500, 'User goal too long').optional(),
   
-  difficulty: DifficultySchema,
-  
-  scenarioId: z.string().min(1, 'Scenario ID required'),
+  difficulty: DifficultySchema.optional(),
   
   model: AIModelSchema.optional(),
+  
+  // Optional fields for enhanced tracking
+  sessionId: z.string().optional(),
+  scenarioId: z.string().optional(),
 });
 
 export type AnalyzeRequest = z.infer<typeof AnalyzeRequestSchema>;
@@ -128,7 +141,11 @@ export const TelegramUpdateSchema = z.object({
         id: z.number(),
         first_name: z.string(),
       }),
-      message: z.any().optional(),
+      message: z.object({
+        message_id: z.number(),
+        chat: z.object({ id: z.number() }),
+        text: z.string().optional(),
+      }).optional(),
       data: z.string(),
     })
     .optional(),
@@ -156,32 +173,42 @@ export type WebhookSetupRequest = z.infer<typeof WebhookSetupRequestSchema>;
 // FIRESTORE SCHEMAS (for data integrity)
 // ==========================================
 
+// Firestore Timestamp can be a Date, number, or Firestore Timestamp object
+const FirestoreTimestampSchema = z.union([
+  z.date(),
+  z.number(),
+  z.object({
+    seconds: z.number(),
+    nanoseconds: z.number(),
+  }).passthrough(), // Allow additional methods like toDate()
+]);
+
 export const SessionSchema = z.object({
-  userId: z.string().uuid(),
+  userId: z.string(),
   scenarioId: z.string(),
   difficulty: DifficultySchema,
   status: z.enum(['active', 'paused', 'completed']),
-  startTime: z.any(), // Firestore Timestamp
-  endTime: z.any().optional(),
+  startTime: FirestoreTimestampSchema,
+  endTime: FirestoreTimestampSchema.optional(),
   messageCount: z.number().int().min(0).default(0),
   aiModel: AIModelSchema.optional(),
 });
 
 export const UserStatsSchema = z.object({
-  userId: z.string().uuid(),
+  userId: z.string(),
   totalSessions: z.number().int().min(0).default(0),
   totalMessages: z.number().int().min(0).default(0),
   averageScore: z.number().min(0).max(100).default(0),
   techniquesUsed: z.array(z.string()).default([]),
-  lastActiveAt: z.any(),
+  lastActiveAt: FirestoreTimestampSchema,
 });
 
 export const ConsultationSchema = z.object({
-  userId: z.string().uuid(),
+  userId: z.string(),
   title: z.string().min(1).max(200),
   description: z.string().max(5000),
   status: z.enum(['active', 'resolved', 'archived']),
-  createdAt: z.any(),
+  createdAt: FirestoreTimestampSchema,
   aiModel: AIModelSchema.optional(),
 });
 

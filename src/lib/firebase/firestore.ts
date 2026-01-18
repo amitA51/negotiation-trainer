@@ -355,9 +355,10 @@ export async function getUserStats(userId: string): Promise<UserStats | null> {
     totalConsultations: data.totalConsultations || 0,
     avgScore: data.avgScore || 0,
     techniquesUsed: data.techniquesUsed || {},
-    scoresHistory: (data.scoresHistory || []).map((s: any) => ({
-      ...s,
+    scoresHistory: (data.scoresHistory || []).map((s: { date?: { toDate: () => Date }; score: number; sessionId: string }) => ({
       date: s.date?.toDate() || new Date(),
+      score: s.score,
+      sessionId: s.sessionId,
     })),
     strongTechniques: data.strongTechniques || [],
     weakTechniques: data.weakTechniques || [],

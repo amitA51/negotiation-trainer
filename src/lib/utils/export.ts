@@ -376,7 +376,11 @@ function downloadTextFile(content: string, fileName: string): void {
 /**
  * Export summary statistics to PDF
  */
-export async function exportStatsToPDF(stats: any): Promise<void> {
+export async function exportStatsToPDF(stats: {
+  totalSessions?: number;
+  avgScore?: number;
+  techniquesUsed?: Record<string, number>;
+}): Promise<void> {
   // TODO: Implement stats export
   console.log('Stats export coming soon', stats);
 }

@@ -152,14 +152,14 @@ describe('ChatRequestSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('should reject invalid UUID for sessionId', () => {
-    const invalidRequest = {
+  it('should accept any string for sessionId', () => {
+    const validRequest = {
       message: 'Hello',
-      sessionId: 'not-a-uuid',
+      sessionId: 'any-string-works',
     };
 
-    const result = ChatRequestSchema.safeParse(invalidRequest);
-    expect(result.success).toBe(false);
+    const result = ChatRequestSchema.safeParse(validRequest);
+    expect(result.success).toBe(true);
   });
 });
 
@@ -170,9 +170,8 @@ describe('AnalyzeRequestSchema', () => {
         { role: 'user', content: 'Hello' },
         { role: 'assistant', content: 'Hi there!' },
       ],
-      sessionId: '123e4567-e89b-12d3-a456-426614174000',
+      userGoal: 'Get a salary raise',
       difficulty: 5,
-      scenarioId: 'salary-negotiation',
       model: 'gemini-1.5-pro' as const,
     };
 
@@ -180,12 +179,18 @@ describe('AnalyzeRequestSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('should reject with less than 2 messages', () => {
-    const invalidRequest = {
+  it('should validate minimal analyze request with only messages', () => {
+    const minimalRequest = {
       messages: [{ role: 'user', content: 'Hello' }],
-      sessionId: '123e4567-e89b-12d3-a456-426614174000',
-      difficulty: 5,
-      scenarioId: 'test',
+    };
+
+    const result = AnalyzeRequestSchema.safeParse(minimalRequest);
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject empty messages array', () => {
+    const invalidRequest = {
+      messages: [],
     };
 
     const result = AnalyzeRequestSchema.safeParse(invalidRequest);
@@ -195,9 +200,6 @@ describe('AnalyzeRequestSchema', () => {
   it('should reject with too many messages', () => {
     const invalidRequest = {
       messages: Array(201).fill({ role: 'user', content: 'test' }),
-      sessionId: '123e4567-e89b-12d3-a456-426614174000',
-      difficulty: 5,
-      scenarioId: 'test',
     };
 
     const result = AnalyzeRequestSchema.safeParse(invalidRequest);
@@ -294,10 +296,11 @@ describe('validateRequest', () => {
     expect(result.mode).toBe('training');
   });
 
-  it('should throw error for invalid request', async () => {
+  it('should throw error for history without message', async () => {
     const mockRequest = {
       json: jest.fn().mockResolvedValue({
-        message: '', // Empty message - invalid
+        message: '', // Empty message with history - should fail refinement
+        history: [{ role: 'user', content: 'Previous message' }],
       }),
     } as unknown as Request;
 

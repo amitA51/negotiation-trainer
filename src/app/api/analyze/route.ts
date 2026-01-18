@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getAnalysisPrompt } from "@/lib/gemini/prompts";
+import { AnalyzeRequestSchema, type AnalyzeRequest } from "@/lib/validation/schemas";
+import { checkRateLimit, handleAPIError, withTimeout, withRetry } from "@/lib/utils/api-helpers";
 import type { AIModel } from "@/types";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -11,49 +13,12 @@ if (!GEMINI_API_KEY) {
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-// Get model by name - default to Pro for analysis
+/** Get Gemini model by name - defaults to Pro for analysis */
 function getModel(modelName: AIModel = "gemini-1.5-pro") {
   return genAI.getGenerativeModel({ model: modelName });
 }
 
-// Timeout wrapper for async operations
-async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-  const timeout = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error("Request timeout")), timeoutMs)
-  );
-  return Promise.race([promise, timeout]);
-}
-
-// Retry wrapper with exponential backoff
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  maxRetries: number = 3,
-  baseDelay: number = 1000
-): Promise<T> {
-  let lastError: Error | undefined;
-  
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error as Error;
-      
-      // Don't retry on validation errors
-      if (error instanceof Error && error.message.includes("validation")) {
-        throw error;
-      }
-      
-      // Exponential backoff
-      if (attempt < maxRetries - 1) {
-        await new Promise(resolve => setTimeout(resolve, baseDelay * Math.pow(2, attempt)));
-      }
-    }
-  }
-  
-  throw lastError;
-}
-
-// Default analysis for fallback
+/** Default analysis for fallback scenarios */
 const DEFAULT_ANALYSIS = {
   score: 50,
   techniquesUsed: [],
@@ -63,14 +28,40 @@ const DEFAULT_ANALYSIS = {
   dealSummary: "לא ניתן היה לנתח את השיחה",
 };
 
+/**
+ * POST /api/analyze
+ * Analyzes a negotiation session and provides feedback
+ */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { messages, userGoal, difficulty, model: modelName } = body;
+    // 1. Rate limiting - 10 requests per minute
+    const rateLimitResponse = await checkRateLimit(request, {
+      uniqueTokenPerInterval: 10,
+      interval: 60000,
+    });
+    if (rateLimitResponse) return rateLimitResponse;
 
-    // Use Pro for analysis by default, but allow override
-    const model = getModel(modelName as AIModel || "gemini-1.5-pro");
+    // 2. Parse and validate request body
+    let validatedBody: AnalyzeRequest;
+    try {
+      const body = await request.json();
+      validatedBody = AnalyzeRequestSchema.parse(body);
+    } catch (error) {
+      return NextResponse.json(
+        { 
+          error: "Validation failed", 
+          message: error instanceof Error ? error.message : "Invalid request body" 
+        },
+        { status: 400 }
+      );
+    }
 
+    const { messages, userGoal, difficulty, model: modelName } = validatedBody;
+
+    // 3. Get the appropriate model
+    const model = getModel(modelName ?? "gemini-1.5-pro");
+
+    // 4. Check minimum messages
     if (!messages || messages.length === 0) {
       return NextResponse.json(
         { error: "No messages to analyze" },
@@ -78,25 +69,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Format conversation
+    // 5. Format conversation for analysis
     const conversation = messages
-      .filter((m: { role: string }) => m.role !== "system")
-      .map((m: { role: string; content: string }) => 
-        `${m.role === "user" ? "משתמש" : "יריב"}: ${m.content}`
-      )
+      .filter((m) => m.role !== "system")
+      .map((m) => `${m.role === "user" ? "משתמש" : "יריב"}: ${m.content}`)
       .join("\n");
 
-    const prompt = getAnalysisPrompt(conversation, userGoal, difficulty);
-    
-    // Call Gemini with timeout and retry
+    const prompt = getAnalysisPrompt(conversation, userGoal ?? "לנהל משא ומתן מוצלח", difficulty ?? 3);
+
+    // 6. Call Gemini with timeout and retry
     const result = await withRetry(
-      () => withTimeout(model.generateContent(prompt), 60000), // 60s timeout for analysis
-      3
+      () => withTimeout(model.generateContent(prompt), 60000, "Analysis request timed out"),
+      { maxAttempts: 3, initialDelay: 1000 }
     );
+    
     const response = await result.response;
     const text = response.text();
 
-    // Try to extract JSON from response
+    // 7. Extract JSON from response
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       throw new Error("No JSON found in response");
@@ -104,29 +94,30 @@ export async function POST(request: NextRequest) {
 
     const analysis = JSON.parse(jsonMatch[0]);
 
-    // Validate and normalize
+    // 8. Validate and normalize the response
     const normalizedAnalysis = {
       score: Math.max(0, Math.min(100, analysis.score || 0)),
-      techniquesUsed: analysis.techniquesUsed || [],
-      strengths: analysis.strengths || [],
-      improvements: analysis.improvements || [],
-      recommendations: analysis.recommendations || [],
-      dealSummary: analysis.dealSummary || "לא הושגה עסקה",
+      techniquesUsed: Array.isArray(analysis.techniquesUsed) ? analysis.techniquesUsed : [],
+      strengths: Array.isArray(analysis.strengths) ? analysis.strengths : [],
+      improvements: Array.isArray(analysis.improvements) ? analysis.improvements : [],
+      recommendations: Array.isArray(analysis.recommendations) ? analysis.recommendations : [],
+      dealSummary: typeof analysis.dealSummary === 'string' ? analysis.dealSummary : "לא הושגה עסקה",
     };
 
     return NextResponse.json(normalizedAnalysis);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    
+
     // Return timeout-specific message
-    if (errorMessage.includes("timeout")) {
+    if (errorMessage.includes("timeout") || errorMessage.includes("timed out")) {
       return NextResponse.json({
         ...DEFAULT_ANALYSIS,
         dealSummary: "הניתוח נמשך יותר מדי זמן. נסה שוב מאוחר יותר.",
       });
     }
-    
-    // Return a default analysis on error
-    return NextResponse.json(DEFAULT_ANALYSIS);
+
+    // Log and return handled error
+    console.error("[/api/analyze] Error:", errorMessage);
+    return handleAPIError(error);
   }
 }
